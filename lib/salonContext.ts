@@ -11,7 +11,7 @@ const supabase = createClient(
 )
 
 // UUID du salon par défaut (depuis seed.sql)
-const DEFAULT_SALON_ID = '00000000-0000-0000-0000-000000000001'
+const DEFAULT_SALON_ID = 'e0b7b419-a22b-4c2c-8355-2f4af30fe1c2'
 
 /**
  * Récupère l'ID du salon actif par son slug
