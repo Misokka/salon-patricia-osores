@@ -95,25 +95,30 @@ export async function POST(request: Request) {
     /* -----------------------------
        Insert DB (image active unique)
     ----------------------------- */
+    const insertData = {
+      salon_id: salonId,
+      service_id: serviceId,
+      type: IMAGE_TYPE,
+      image_url: publicUrlData.publicUrl,
+      alt_text: 'Image du service',
+      is_visible: true,
+      position: 0,
+    }
+
+    console.log('[POST /api/admin/images] Inserting:', JSON.stringify(insertData, null, 2))
+
     const { data: image, error: insertError } = await supabaseAdmin
       .from('images')
-      .insert({
-        salon_id: salonId,
-        service_id: serviceId,
-        type: IMAGE_TYPE,
-        image_url: publicUrlData.publicUrl,
-        alt_text: 'Image du service',
-        is_visible: true,
-        position: 0,
-      })
+      .insert(insertData)
       .select()
       .single()
 
     if (insertError) {
+      console.error('[POST /api/admin/images] Insert error:', insertError)
       await supabaseAdmin.storage.from(BUCKET).remove([storagePath])
 
       return NextResponse.json(
-        { success: false, error: 'Erreur création image' },
+        { success: false, error: insertError.message || 'Erreur création image' },
         { status: 500 }
       )
     }
@@ -124,8 +129,9 @@ export async function POST(request: Request) {
       data: image,
     })
   } catch (error) {
+    console.error('[POST /api/admin/images] Unexpected error:', error)
     return NextResponse.json(
-      { success: false, error: 'Erreur serveur interne' },
+      { success: false, error: error instanceof Error ? error.message : 'Erreur serveur interne' },
       { status: 500 }
     )
   }

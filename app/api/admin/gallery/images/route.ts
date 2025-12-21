@@ -110,17 +110,21 @@ export async function POST(request: Request) {
     }
 
     // Insert
+    const insertData = {
+      salon_id: salonId,
+      type: GALLERY_TYPE,
+      image_url: imageUrl,
+      alt_text: altText || null,
+      service_id: serviceId ?? null,
+      position: typeof position === 'number' ? position : 0,
+      is_visible: true,
+    }
+
+    console.log('[POST /api/admin/gallery/images] Inserting:', JSON.stringify(insertData, null, 2))
+
     const { data, error } = await supabaseAdmin
       .from('images')
-      .insert({
-        salon_id: salonId,
-        type: GALLERY_TYPE,
-        image_url: imageUrl,
-        alt_text: altText || null,
-        service_id: serviceId ?? null,
-        position: typeof position === 'number' ? position : 0,
-        is_visible: true,
-      })
+      .insert(insertData)
       .select(
         `
           id,
@@ -141,8 +145,9 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
+      console.error('[POST /api/admin/gallery/images] Insert error:', error)
       return NextResponse.json(
-        { success: false, error: "Erreur lors de l'ajout de l'image" },
+        { success: false, error: error.message || "Erreur lors de l'ajout de l'image" },
         { status: 500 }
       )
     }
@@ -153,8 +158,9 @@ export async function POST(request: Request) {
       data,
     })
   } catch (error) {
+    console.error('[POST /api/admin/gallery/images] Unexpected error:', error)
     return NextResponse.json(
-      { success: false, error: 'Erreur serveur interne' },
+      { success: false, error: error instanceof Error ? error.message : 'Erreur serveur interne' },
       { status: 500 }
     )
   }
@@ -237,8 +243,9 @@ export async function PATCH(request: Request) {
       .single()
 
     if (error) {
+      console.error('[PATCH /api/admin/gallery/images] Update error:', error)
       return NextResponse.json(
-        { success: false, error: 'Erreur lors de la mise à jour' },
+        { success: false, error: error.message || 'Erreur lors de la mise à jour' },
         { status: 500 }
       )
     }
@@ -249,8 +256,9 @@ export async function PATCH(request: Request) {
       data,
     })
   } catch (error) {
+    console.error('[PATCH /api/admin/gallery/images] Unexpected error:', error)
     return NextResponse.json(
-      { success: false, error: 'Erreur serveur interne' },
+      { success: false, error: error instanceof Error ? error.message : 'Erreur serveur interne' },
       { status: 500 }
     )
   }

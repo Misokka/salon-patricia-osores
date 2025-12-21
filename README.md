@@ -98,6 +98,17 @@ WHERE email = 'votre-email@example.com';
 
 Cela permet d’accéder à l’interface d’administration.
 
+UPDATE auth.users
+SET raw_app_meta_data =
+  jsonb_set(
+    raw_app_meta_data,
+    '{salon_id}',
+    '"e0b7b419-a22b-4c2c-8355-2f4af30fe1c2"',
+    true
+  )
+WHERE email = 'jeremy.caron.labalette@gmail.com';
+
+
 ---
 
 ### 6️⃣ Lancer l’application
