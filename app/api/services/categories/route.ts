@@ -1,16 +1,20 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
+function getSupabase() {
+  return createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+}
 import { getDefaultSalonId } from '@/lib/salonContext'
 
 export async function GET() {
   const salonId = getDefaultSalonId()
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('service_categories')
     .select(`
       id,

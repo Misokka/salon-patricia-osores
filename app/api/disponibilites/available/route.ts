@@ -1,13 +1,17 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { addMinutes, parse, format } from 'date-fns'
 import { getDefaultSalonId } from '@/lib/salonContext'
 
 // Initialiser le client Supabase
-const supabase = createClient(
+function getSupabase() {
+  return createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+}
 
 /**
  * GET - Récupère les horaires réellement disponibles pour un service donné
@@ -28,7 +32,7 @@ export async function GET(request: Request) {
     }
 
     // Récupérer le service
-    const { data: service, error: serviceError } = await supabase
+    const { data: service, error: serviceError } = await getSupabase()
       .from('services')
       .select('id, name, duration_minutes')
       .eq('id', serviceId)
@@ -44,7 +48,7 @@ export async function GET(request: Request) {
     const salonId = getDefaultSalonId()
 
     // Récupérer la fréquence des créneaux
-    const { data: settings } = await supabase
+    const { data: settings } = await getSupabase()
       .from('salon_settings')
       .select('default_slot_frequency_minutes')
       .eq('salon_id', salonId)
@@ -56,7 +60,7 @@ export async function GET(request: Request) {
     )
 
     // Construire la requête
-    let query = supabase
+    let query = getSupabase()
       .from('time_slots')
       .select('id, slot_date, start_time, is_available')
       .eq('is_available', true)
@@ -84,7 +88,7 @@ export async function GET(request: Request) {
     }
 
     // Jours fermés
-    const { data: closedDays } = await supabase
+    const { data: closedDays } = await getSupabase()
       .from('opening_days')
       .select('day_of_week')
       .eq('salon_id', salonId)
@@ -95,13 +99,13 @@ export async function GET(request: Request) {
     )
 
     // Fermetures exceptionnelles
-    const { data: exceptionalClosed } = await supabase
+    const { data: exceptionalClosed } = await getSupabase()
       .from('salon_exceptional_hours')
       .select('start_date, end_date')
       .eq('salon_id', salonId)
       .eq('type', 'closed')
 
-    const { data: exceptionalOpen } = await supabase
+    const { data: exceptionalOpen } = await getSupabase()
       .from('salon_exceptional_hours')
       .select('start_date, end_date')
       .eq('salon_id', salonId)

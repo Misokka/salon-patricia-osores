@@ -1,12 +1,16 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getDefaultSalonId } from '../../../lib/salonContext'
 
 // Initialiser le client Supabase
-const supabase = createClient(
+function getSupabase() {
+  return createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+}
 
 // GET : Récupérer les disponibilités
 export async function GET(request: Request) {
@@ -16,7 +20,7 @@ export async function GET(request: Request) {
     const dateFin = searchParams.get('dateFin')
     const disponibleUniquement = searchParams.get('disponibleUniquement') === 'true'
 
-    let query = supabase
+    let query = getSupabase()
       .from('time_slots')
       .select('*')
       .order('slot_date', { ascending: true })
@@ -47,7 +51,7 @@ export async function GET(request: Request) {
     const salonId = getDefaultSalonId()
 
     // Récupérer les jours fermés
-    const { data: closedDays } = await supabase
+    const { data: closedDays } = await getSupabase()
       .from('opening_days')
       .select('day_of_week')
       .eq('salon_id', salonId)
@@ -56,14 +60,14 @@ export async function GET(request: Request) {
     const closedDaysSet = new Set((closedDays || []).map((d) => d.day_of_week))
 
     // Récupérer les fermetures exceptionnelles
-    const { data: exceptionalClosed } = await supabase
+    const { data: exceptionalClosed } = await getSupabase()
       .from('salon_exceptional_hours')
       .select('start_date, end_date')
       .eq('salon_id', salonId)
       .eq('type', 'closed')
 
     // Récupérer les ouvertures exceptionnelles
-    const { data: exceptionalOpen } = await supabase
+    const { data: exceptionalOpen } = await getSupabase()
       .from('salon_exceptional_hours')
       .select('start_date, end_date')
       .eq('salon_id', salonId)
@@ -130,7 +134,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier si le créneau existe déjà
-    const { data: existing } = await supabase
+    const { data: existing } = await getSupabase()
       .from('time_slots')
       .select('id')
       .eq('slot_date', date)
@@ -145,7 +149,7 @@ export async function POST(request: Request) {
     }
 
     // Insérer le nouveau créneau
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('time_slots')
       .insert([{ slot_date: date, start_time: heure, is_available: est_disponible }])
       .select()
@@ -180,7 +184,7 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('time_slots')
       .delete()
       .eq('id', id)
@@ -214,7 +218,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('time_slots')
       .update({ is_available: est_disponible })
       .eq('id', id)

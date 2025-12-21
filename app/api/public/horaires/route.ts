@@ -1,12 +1,16 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 import { getDefaultSalonId } from '../../../../lib/salonContext'
 import { format, parseISO, isWithinInterval } from 'date-fns'
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 const DAYS_FR = [
   'Lundi',
@@ -43,7 +47,7 @@ export async function GET() {
     /* =====================
        1. Standard opening days
     ===================== */
-    const { data: openingDays, error: daysError } = await supabase
+    const { data: openingDays, error: daysError } = await getSupabase()
       .from('opening_days')
       .select('day_of_week, is_open')
       .eq('salon_id', salonId)
@@ -53,7 +57,7 @@ export async function GET() {
     /* =====================
        2. Standard time ranges
     ===================== */
-    const { data: timeRanges, error: rangesError } = await supabase
+    const { data: timeRanges, error: rangesError } = await getSupabase()
       .from('opening_time_ranges')
       .select('day_of_week, start_time, end_time')
       .eq('salon_id', salonId)
@@ -65,7 +69,7 @@ export async function GET() {
     /* =====================
        3. Active exceptional periods
     ===================== */
-    const { data: exceptionalPeriods, error: exceptionalError } = await supabase
+    const { data: exceptionalPeriods, error: exceptionalError } = await getSupabase()
       .from('exceptional_periods')
       .select(`
         id,
