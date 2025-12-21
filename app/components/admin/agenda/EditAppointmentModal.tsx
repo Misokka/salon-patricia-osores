@@ -4,7 +4,7 @@ import { useState, useEffect, Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon, CalendarIcon, ClockIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 
 import type { Appointment } from '@/types/appointment'
 
@@ -60,7 +60,7 @@ export default function EditAppointmentModal({
     setLoadingSlots(true)
     try {
       // Récupérer tous les créneaux de la table disponibilites pour cette date
-      const response = await axios.get('/api/disponibilites', {
+      const response = await apiClient.get('/api/disponibilites', {
         params: {
           dateDebut: date,
           dateFin: date,
@@ -71,7 +71,7 @@ export default function EditAppointmentModal({
       const slots = response.data || []
       
       // Récupérer les RDV déjà bookés pour ce jour (sauf le RDV actuel)
-      const rdvResponse = await axios.get('/api/admin/agenda/appointments', {
+      const rdvResponse = await apiClient.get('/api/admin/agenda/appointments', {
         params: {
           date: date,
           viewMode: 'day',

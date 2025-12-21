@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import {
   PlusIcon,
   PencilIcon,
@@ -78,7 +78,7 @@ export default function HorairesAdmin() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const res = await axios.get(`/api/admin/horaires`)
+      const res = await apiClient.get(`/api/admin/horaires`)
       if (res.data.success) {
         setSettings(res.data.data.settings)
         setHours(res.data.data.hours)
@@ -102,7 +102,7 @@ export default function HorairesAdmin() {
       const newValue = !settings.online_booking_enabled
       setSettings((prev) => ({ ...prev, online_booking_enabled: newValue }))
 
-      const res = await axios.post(`/api/admin/horaires`, {
+      const res = await apiClient.post(`/api/admin/horaires`, {
         type: 'settings',
         data: { online_booking_enabled: newValue },
       })
@@ -122,7 +122,7 @@ export default function HorairesAdmin() {
     const currentHour = hours.find((h) => h.day_of_week === dayOfWeek)
     const newIsOpen = !currentHour?.is_open
 
-    const res = await axios.post(`/api/admin/horaires`, {
+    const res = await apiClient.post(`/api/admin/horaires`, {
       type: 'day',
       data: { day_of_week: dayOfWeek, is_open: newIsOpen },
     })
@@ -158,7 +158,7 @@ export default function HorairesAdmin() {
 
       if (data.id) {
         // Modification
-        const res = await axios.patch(`/api/admin/horaires`, {
+        const res = await apiClient.patch(`/api/admin/horaires`, {
           id: data.id,
           start_time: data.start_time,
           end_time: data.end_time,
@@ -181,7 +181,7 @@ export default function HorairesAdmin() {
         }
       } else {
         // Création
-        const res = await axios.post(`/api/admin/horaires`, {
+        const res = await apiClient.post(`/api/admin/horaires`, {
           type: 'range',
           data: {
             day_of_week: dayOfWeek,
@@ -228,7 +228,7 @@ export default function HorairesAdmin() {
     try {
       const today = format(new Date(), 'yyyy-MM-dd')
 
-      const res = await axios.post(`/api/admin/horaires/generate-slots`, {
+      const res = await apiClient.post(`/api/admin/horaires/generate-slots`, {
         start_date: today,
         end_date: endDate,
         day_of_week: dayOfWeek,
@@ -255,7 +255,7 @@ export default function HorairesAdmin() {
 
     try {
       setDeletingId(id)
-      const res = await axios.delete(`/api/admin/horaires?id=${id}`)
+      const res = await apiClient.delete(`/api/admin/horaires?id=${id}`)
 
       if (res.data.success) {
         setTimeRanges((prev) => prev.filter((r) => r.id !== id))
@@ -282,7 +282,7 @@ export default function HorairesAdmin() {
       // Créer toutes les plages pour le jour cible
       const createdRanges = []
       for (const range of sourceRanges) {
-        const res = await axios.post(`/api/admin/horaires`, {
+        const res = await apiClient.post(`/api/admin/horaires`, {
           type: 'range',
           data: {
             day_of_week: targetDayOfWeek,
@@ -308,7 +308,7 @@ export default function HorairesAdmin() {
 
       let totalGeneratedSlots = 0
       for (const range of createdRanges) {
-        const genRes = await axios.post(`/api/admin/horaires/generate-slots`, {
+        const genRes = await apiClient.post(`/api/admin/horaires/generate-slots`, {
           start_date: today,
           end_date: endDate,
           day_of_week: targetDayOfWeek,

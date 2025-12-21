@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { isToday, isThisWeek, isBefore, startOfDay } from 'date-fns'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import { AnimatePresence } from 'framer-motion'
 
 import RendezVousCard, { type RendezVous } from './RendezVousCard'
@@ -42,7 +42,7 @@ export default function RendezVousAdmin() {
   async function fetchRendezVous() {
     try {
       setLoading(true)
-      const { data } = await axios.get('/api/admin/rendezvous')
+      const { data } = await apiClient.get('/api/admin/rendezvous')
       if (data.success) {
         setItems(data.data || [])
       }
@@ -66,7 +66,7 @@ export default function RendezVousAdmin() {
         prev.map(r => (r.id === id ? { ...r, status } : r))
       )
 
-      await axios.patch('/api/admin/rendezvous', { id, status })
+      await apiClient.patch('/api/admin/rendezvous', { id, status })
 
       const messages = {
         accepted: 'Rendez-vous confirmé',

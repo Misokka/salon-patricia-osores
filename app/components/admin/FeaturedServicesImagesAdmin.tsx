@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -44,7 +44,7 @@ export default function FeaturedServicesImagesAdmin() {
   const fetchFeaturedServices = async () => {
     try {
       setLoading(true)
-      const res = await axios.get('/api/admin/featured-services')
+      const res = await apiClient.get('/api/admin/featured-services')
       setServices(res.data.data)
     } catch {
       showMessage('error', 'Erreur lors du chargement des services')
@@ -84,7 +84,7 @@ export default function FeaturedServicesImagesAdmin() {
       formData.append('service_id', serviceId)
       formData.append('type', 'featured')
 
-      const res = await axios.post('/api/admin/images', formData)
+      const res = await apiClient.post('/api/admin/images', formData)
 
       setServices(prev =>
         prev.map(s => (s.id === serviceId ? { ...s, image: res.data.data } : s))
@@ -118,7 +118,7 @@ export default function FeaturedServicesImagesAdmin() {
 
     try {
       setIsDeleting(true)
-      await axios.delete(`/api/admin/images?imageId=${imageToDelete.imageId}`)
+      await apiClient.delete(`/api/admin/images?imageId=${imageToDelete.imageId}`)
 
       setServices(prev =>
         prev.map(s => (s.id === imageToDelete.serviceId ? { ...s, image: null } : s))

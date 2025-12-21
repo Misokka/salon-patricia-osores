@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import { useState } from 'react'
 import { FaCalendarAlt, FaClock, FaUser } from 'react-icons/fa'
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
@@ -24,7 +24,7 @@ export default function RecentRequestsCard({ request, onActionComplete }: Props)
 
     try {
       setIsUpdating(true)
-      await axios.patch(`/api/admin/rendezvous/${request.id}`, { status })
+      await apiClient.patch(`/api/admin/rendezvous/${request.id}`, { status })
       onActionComplete?.()
     } catch (error) {
       console.error('Erreur mise à jour RDV:', error)

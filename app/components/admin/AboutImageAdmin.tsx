@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -69,7 +69,7 @@ export default function AboutImageAdmin() {
   const loadImage = async () => {
     try {
       setLoading(true)
-      const res = await axios.get('/api/admin/about/image')
+      const res = await apiClient.get('/api/admin/about/image')
       setImageUrl(res.data?.data?.imageUrl ?? null)
     } catch (error) {
       console.error('Erreur chargement image About:', error)
@@ -87,7 +87,7 @@ export default function AboutImageAdmin() {
       formData.append('file', file)
       formData.append('folder', 'about')
 
-      const uploadRes = await axios.post('/api/admin/upload-image', formData, {
+      const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
 
@@ -97,7 +97,7 @@ export default function AboutImageAdmin() {
 
       const publicUrl = uploadRes.data.data.publicUrl
 
-      await axios.patch('/api/admin/about/image', {
+      await apiClient.patch('/api/admin/about/image', {
         imageUrl: publicUrl,
       })
 
@@ -119,8 +119,8 @@ export default function AboutImageAdmin() {
     try {
       const path = extractStoragePath(imageUrl)
 
-      await axios.patch('/api/admin/about/image', { imageUrl: null })
-      await axios.delete(`/api/admin/delete-image?path=${encodeURIComponent(path)}`)
+      await apiClient.patch('/api/admin/about/image', { imageUrl: null })
+      await apiClient.delete(`/api/admin/delete-image?path=${encodeURIComponent(path)}`)
 
       setImageUrl(null)
       showMessage('success', 'Image supprimée')

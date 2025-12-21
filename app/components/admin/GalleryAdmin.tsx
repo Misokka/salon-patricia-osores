@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -86,8 +86,8 @@ export default function GalleryAdmin() {
     try {
       setLoading(true)
       const [imagesRes, servicesRes] = await Promise.all([
-        axios.get('/api/admin/gallery/images'),
-        axios.get('/api/admin/services'),
+        apiClient.get('/api/admin/gallery/images'),
+        apiClient.get('/api/admin/services'),
       ])
       setImages(imagesRes.data?.data ?? [])
       setServices(servicesRes.data?.data ?? [])
@@ -107,7 +107,7 @@ export default function GalleryAdmin() {
     serviceId: string | null
   ) => {
     try {
-      await axios.patch('/api/admin/gallery/images', {
+      await apiClient.patch('/api/admin/gallery/images', {
         id: imageId,
         serviceId,
       })
@@ -130,9 +130,9 @@ export default function GalleryAdmin() {
       formData.append('file', file)
       formData.append('folder', 'gallery')
 
-      const uploadRes = await axios.post('/api/admin/upload-image', formData)
+      const uploadRes = await apiClient.post('/api/admin/upload-image', formData)
 
-      await axios.post('/api/admin/gallery/images', {
+      await apiClient.post('/api/admin/gallery/images', {
         imageUrl: uploadRes.data.data.publicUrl,
         altText: `Réalisation ${images.length + 1}`,
         serviceId: null,
@@ -156,14 +156,14 @@ export default function GalleryAdmin() {
       formData.append('file', file)
       formData.append('folder', 'gallery')
 
-      const uploadRes = await axios.post('/api/admin/upload-image', formData)
+      const uploadRes = await apiClient.post('/api/admin/upload-image', formData)
 
-      await axios.patch('/api/admin/gallery/images', {
+      await apiClient.patch('/api/admin/gallery/images', {
         id: image.id,
         imageUrl: uploadRes.data.data.publicUrl,
       })
 
-      await axios.delete(
+      await apiClient.delete(
         `/api/admin/delete-image?path=${encodeURIComponent(oldPath)}`
       )
 
@@ -182,8 +182,8 @@ export default function GalleryAdmin() {
 
     try {
       const path = extractStoragePath(imageToDelete.image_url)
-      await axios.delete(`/api/admin/gallery/images?id=${imageToDelete.id}`)
-      await axios.delete(
+      await apiClient.delete(`/api/admin/gallery/images?id=${imageToDelete.id}`)
+      await apiClient.delete(
         `/api/admin/delete-image?path=${encodeURIComponent(path)}`
       )
 

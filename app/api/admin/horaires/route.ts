@@ -1,3 +1,7 @@
+export const runtime = 'nodejs';
+
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
@@ -48,8 +52,9 @@ export async function GET() {
       },
     })
   } catch (error) {
+    console.error('[API /api/admin/horaires GET] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

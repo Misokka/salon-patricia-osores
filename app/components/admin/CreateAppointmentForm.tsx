@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
+import apiClient from '@/lib/apiClient'
 import { motion } from 'framer-motion'
 import { ChevronLeftIcon, CalendarIcon, ClockIcon, UserIcon } from '@heroicons/react/24/outline'
 
@@ -67,7 +67,7 @@ export default function CreateAppointmentForm() {
 
   const fetchServices = async () => {
     try {
-      const { data } = await axios.get('/api/admin/services')
+      const { data } = await apiClient.get('/api/admin/services')
       if (data.success) {
         setServices(data.data || [])
       }
@@ -82,7 +82,7 @@ export default function CreateAppointmentForm() {
 
     try {
       setLoadingSlots(true)
-      const { data } = await axios.get('/api/disponibilites/available', {
+      const { data } = await apiClient.get('/api/disponibilites/available', {
         params: {
           service_id: selectedService.id,
           date_debut: selectedDate,
@@ -158,7 +158,7 @@ export default function CreateAppointmentForm() {
         return
       }
 
-      const { data } = await axios.post('/api/admin/rendezvous/create', {
+      const { data } = await apiClient.post('/api/admin/rendezvous/create', {
         service_id: selectedService.id,
         service_name: selectedService.name,
         date: selectedDate,
