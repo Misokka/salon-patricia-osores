@@ -1,6 +1,5 @@
-export const dynamic = 'force-dynamic';
-
-export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -8,31 +7,31 @@ import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
 import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 /**
- * GET - Récupère toutes les catégories actives
+ * GET — Récupère toutes les catégories actives
+ * (⚠️ peut retourner 0 ligne → PAS de .single())
  */
 export async function GET() {
+  const { error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
   try {
-    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
-    const { data, error } = await supabase
+
+    const { data, error } = await supabaseAdmin
       .from('service_categories')
       .select('*')
       .eq('salon_id', salonId)
       .is('deleted_at', null)
       .order('position', { ascending: true })
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de la récupération des catégories' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: data ?? [],
     })
   } catch (error) {
+    console.error('[API /api/admin/service-categories GET]', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -41,44 +40,44 @@ export async function GET() {
 }
 
 /**
- * POST - Crée une nouvelle catégorie
+ * POST — Crée une nouvelle catégorie
+ * (⚠️ INSERT → PAS de .single())
  */
 export async function POST(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
     const body = await request.json()
     const { name, color } = body
 
-    if (!name) {
+    if (!name || typeof name !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Le nom est obligatoire' },
         { status: 400 }
       )
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('service_categories')
-      .insert({ salon_id: salonId, name, color: color || null })
+      .insert({
+        salon_id: salonId,
+        name,
+        color: color ?? null,
+      })
       .select()
-      .single()
+      .limit(1)
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de la création de la catégorie' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     return NextResponse.json({
       success: true,
       message: 'Catégorie créée avec succès',
-      data,
+      data: data?.[0] ?? null,
     })
   } catch (error) {
+    console.error('[API /api/admin/service-categories POST]', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -87,49 +86,52 @@ export async function POST(request: Request) {
 }
 
 /**
- * PATCH - Met à jour une catégorie
+ * PATCH — Met à jour une catégorie existante
+ * (⚠️ UPDATE → PAS de .single())
  */
 export async function PATCH(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
     const body = await request.json()
     const { id, name, color, position } = body
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'L\'ID est obligatoire' },
+        { success: false, error: 'ID obligatoire' },
         { status: 400 }
       )
     }
 
-    const updateData: any = {}
+    const updateData: Record<string, any> = {}
     if (name !== undefined) updateData.name = name
     if (color !== undefined) updateData.color = color
     if (position !== undefined) updateData.position = position
 
-    const { data, error } = await supabase
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Aucune donnée à mettre à jour' },
+        { status: 400 }
+      )
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('service_categories')
       .update(updateData)
       .eq('id', id)
       .select()
-      .single()
+      .limit(1)
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de la mise à jour' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     return NextResponse.json({
       success: true,
       message: 'Catégorie mise à jour',
-      data,
+      data: data?.[0] ?? null,
     })
   } catch (error) {
+    console.error('[API /api/admin/service-categories PATCH]', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -138,42 +140,36 @@ export async function PATCH(request: Request) {
 }
 
 /**
- * DELETE - Supprime une catégorie (soft delete)
+ * DELETE — Soft delete d’une catégorie
  */
 export async function DELETE(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'L\'ID est obligatoire' },
+        { success: false, error: 'ID obligatoire' },
         { status: 400 }
       )
     }
 
-    // Soft delete
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('service_categories')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de la suppression' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     return NextResponse.json({
       success: true,
       message: 'Catégorie supprimée',
     })
   } catch (error) {
+    console.error('[API /api/admin/service-categories DELETE]', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
