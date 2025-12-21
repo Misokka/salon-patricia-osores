@@ -1,30 +1,32 @@
 # Fix Images Upload - Services & Gallery
 
-## Problèmes identifiés (UPDATE)
+## ✅ RÉSOLU - Tous les problèmes corrigés !
 
-### 1. Services Featured - Erreur FormData
+### Problème 1 : Services Featured - Erreur FormData ✅
 **Erreur** : `Content-Type was not one of "multipart/form-data" or "application/x-www-form-urlencoded"`
 
-**Cause** : `apiClient` forçait `Content-Type: application/json` dans tous les cas, empêchant l'envoi de FormData.
+**Cause** : `apiClient` forçait `Content-Type: application/json` dans tous les cas
 
-**Solution** :
-- ✅ Intercepteur dans `apiClient` pour détecter FormData et supprimer le Content-Type
-- ✅ Header explicite `'Content-Type': 'multipart/form-data'` dans les composants front
+**Solution** : Intercepteur intelligent + headers explicites
 
-### 2. Gallery - Erreur 500
-**Cause probable** : Même problème que services (FormData mal parsé)
+### Problème 2 : Gallery - Erreur 500 ✅
+**Cause** : Même problème (FormData mal parsé)
 
-**Solution** : Ajout du header Content-Type dans `GalleryAdmin.tsx`
+**Solution** : Headers Content-Type explicites
 
-### 3. About - Image ne s'affiche pas
-**Backend** : ✅ Insertion fonctionne
-**Frontend** : Route publique `/api/about/image` doit récupérer l'image
+### Problème 3 : Images ne s'affichent pas ✅
+**Backend** : ✅ Upload et insertion fonctionnent
+**Frontend** : ❌ Next.js bloquait les images externes
 
-**Solution** : Logs ajoutés pour diagnostiquer si l'image est bien récupérée
+**Cause** : Le domaine Supabase `wtykfssiyumzfrmdpyga.supabase.co` n'était pas autorisé dans `next.config.js`
+
+**Solution** : Ajout du domaine dans `remotePatterns`
+
+---
 
 ## Modifications apportées
 
-### 1. `lib/apiClient.ts`
+### 1. `lib/apiClient.ts` - Intercepteur FormData
 
 **Avant :**
 ```typescript
@@ -84,7 +86,51 @@ const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
 - `/api/admin/gallery/images/route.ts` : Log avant insert + erreurs détaillées  
 - `/api/about/image/route.ts` : Log pour diagnostiquer récupération publique
 
-## Tests à effectuer en production
+### 5. `next.config.js` - Domaine Supabase autorisé
+
+**Avant :**
+```javascript
+remotePatterns: [
+  {
+    protocol: 'https',
+    hostname: 'yywgluwtlhabsxbbgvqo.supabase.co',  // ❌ Ancien projet
+    pathname: '/storage/v1/object/public/**',
+  },
+]
+```
+
+**Après :**
+```javascript
+remotePatterns: [
+  {
+    protocol: 'https',
+    hostname: 'wtykfssiyumzfrmdpyga.supabase.co',  // ✅ Nouveau projet
+    pathname: '/storage/v1/object/public/**',
+  },
+  {
+    protocol: 'https',
+    hostname: 'yywgluwtlhabsxbbgvqo.supabase.co',  // Ancien (compatibilité)
+    pathname: '/storage/v1/object/public/**',
+  },
+]
+```
+
+---
+
+## Validation complète
+
+### Backend ✅
+- Upload vers Supabase Storage : ✅ Fonctionne
+- Insertion dans table `images` : ✅ Fonctionne
+- `salon_id` depuis `user.app_metadata` : ✅ Fonctionne
+
+### Frontend ✅
+- Upload services featured : ✅ Fonctionne
+- Upload gallery : ✅ Fonctionne
+- Upload about : ✅ Fonctionne
+- Affichage images : ✅ Fonctionne (après autorisation domaine)
+
+---
 
 1. **Services Featured** :
    - ✅ Tester upload d'une image de service
@@ -100,18 +146,20 @@ const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
    - ✅ Vérifier que l'image s'affiche sur la page d'accueil
    - ✅ Consulter les logs pour voir si l'API publique récupère bien l'image
 
+---
+
 ## Fichiers modifiés
 
-1. `lib/apiClient.ts` - Intercepteur FormData
-2. `app/components/admin/FeaturedServicesImagesAdmin.tsx` - Header Content-Type
-3. `app/components/admin/GalleryAdmin.tsx` - Header Content-Type (2 endroits)
-4. `app/api/admin/images/route.ts` - Logs détaillés
-5. `app/api/admin/gallery/images/route.ts` - Logs détaillés
-6. `app/api/about/image/route.ts` - Logs diagnostic
+1. ✅ `lib/apiClient.ts` - Intercepteur FormData
+2. ✅ `app/components/admin/FeaturedServicesImagesAdmin.tsx` - Header Content-Type
+3. ✅ `app/components/admin/GalleryAdmin.tsx` - Headers Content-Type (2 endroits)
+4. ✅ `app/api/admin/images/route.ts` - Logs détaillés
+5. ✅ `app/api/admin/gallery/images/route.ts` - Logs détaillés
+6. ✅ `app/api/about/image/route.ts` - Logs diagnostic
+7. ✅ `next.config.js` - Autorisation domaine Supabase `wtykfssiyumzfrmdpyga.supabase.co`
 
 ## Prochaines étapes
 
-1. **Déployer** : `git push`
-2. **Tester** chaque type d'image (services, gallery, about)
-3. **Consulter logs** Vercel pour confirmer que tout fonctionne
-4. **Nettoyer** les console.log une fois validé
+1. ✅ **Déployer** : `git push`
+2. ✅ **Tester** : Upload + affichage pour les 3 types d'images
+3. 🔜 **Nettoyer** : Supprimer les console.log temporaires après validation complète

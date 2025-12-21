@@ -2,7 +2,14 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-      // Supabase PROD
+      // Supabase PROD (nouveau projet)
+      {
+        protocol: 'https',
+        hostname: 'wtykfssiyumzfrmdpyga.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+
+      // Supabase PROD (ancien projet - conservé pour compatibilité)
       {
         protocol: 'https',
         hostname: 'yywgluwtlhabsxbbgvqo.supabase.co',
