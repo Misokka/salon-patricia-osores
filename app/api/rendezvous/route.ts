@@ -1,75 +1,217 @@
 ﻿import { NextResponse } from 'next/server'
-import { supabase } from '../../../lib/supabaseClient'
+import { supabaseAdmin } from '../../../lib/supabase/admin'
 import { sendEmailToPatricia, sendConfirmationToClient } from '../../../lib/emailService'
+import { getDefaultSalonId } from '../../../lib/salonContext'
+import { validateAppointmentSlots } from '../../../lib/appointmentValidation'
 
 export async function POST(request: Request) {
   try {
+    const salonId = getDefaultSalonId()
     const body = await request.json()
-    const { nom, telephone, email, service, date, heure, message } = body
+    const { nom, telephone, email, service, service_id, date, heure, message, required_slot_ids } = body
 
-    // Validation des champs obligatoires
-    if (!nom || !service || !date || !heure) {
+    // Validation des champs obligatoires (CLIENT PUBLIC)
+    if (!nom || !nom.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Les champs nom, téléphone, service, date et heure sont obligatoires' },
+        { success: false, error: 'Le nom est obligatoire' },
         { status: 400 }
       )
     }
 
-    // Marquer le créneau comme non disponible
-    const { error: updateError } = await supabase
-      .from('disponibilites')
-      .update({ est_disponible: false })
-      .eq('date', date)
-      .eq('heure', heure)
-
-    if (updateError) {
-      console.error('Erreur lors de la mise à jour de la disponibilité :', updateError)
-      // On continue malgré l'erreur car le créneau peut ne pas exister dans la table
+    if (!email || !email.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'L\'adresse email est obligatoire pour confirmer votre réservation' },
+        { status: 400 }
+      )
     }
 
-    // Insertion dans Supabase
-    const { data, error } = await supabase
-      .from('rendezvous')
-      .insert([
-        {
-          nom,
-          telephone: telephone || null,
-          email: email || null,
-          service,
-          date,
-          heure,
-          message: message || null,
-          statut: 'en_attente',
-        },
-      ])
-      .select()
-
-    if (error) {
-      console.error('Erreur Supabase :', error)
+    // Validation basique du format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
       return NextResponse.json(
-        { success: false, error: "Erreur lors de l'enregistrement dans la base de données" },
+        { success: false, error: 'L\'adresse email n\'est pas valide' },
+        { status: 400 }
+      )
+    }
+
+    if (!service || !date || !heure) {
+      return NextResponse.json(
+        { success: false, error: 'Le service, la date et l\'heure sont obligatoires' },
+        { status: 400 }
+      )
+    }
+
+    // Validation : si multi-créneaux, required_slot_ids doit être fourni
+    if (!required_slot_ids || !Array.isArray(required_slot_ids) || required_slot_ids.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Les créneaux requis (required_slot_ids) sont manquants' },
+        { status: 400 }
+      )
+    }
+
+    console.log(`🔒 Tentative de réservation : ${required_slot_ids.length} créneaux pour "${service}"`)
+
+    // 🔒 VALIDATION STRICTE : Vérifier que les créneaux correspondent exactement au service
+    const validation = await validateAppointmentSlots(
+      supabaseAdmin,
+      service_id,
+      required_slot_ids,
+      salonId
+    )
+
+    if (!validation.valid) {
+      console.error('❌ Validation échouée (client):', validation.error)
+      console.error('📊 Détails:', validation.details)
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: validation.error,
+          validation_details: validation.details
+        },
+        { status: 400 }
+      )
+    }
+
+    console.log('✅ Validation réussie (client):', validation.details)
+
+    // Vérifier atomiquement que TOUS les créneaux requis sont disponibles
+    const { data: slotsToCheck, error: checkError } = await supabaseAdmin
+      .from('time_slots')
+      .select('id, start_time, is_available')
+      .in('id', required_slot_ids)
+
+    if (checkError) {
+      console.error('Erreur vérification créneaux:', checkError)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la vérification des créneaux' },
         { status: 500 }
       )
     }
 
+    // Vérifications de sécurité
+    if (slotsToCheck.length !== required_slot_ids.length) {
+      return NextResponse.json(
+        { success: false, error: 'Un ou plusieurs créneaux n\'existent pas' },
+        { status: 400 }
+      )
+    }
+
+    const unavailableSlots = slotsToCheck.filter(slot => !slot.is_available)
+    if (unavailableSlots.length > 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Un ou plusieurs créneaux ne sont plus disponibles. Veuillez sélectionner un autre horaire.',
+          unavailable_slots: unavailableSlots.map(s => s.start_time)
+        },
+        { status: 409 } // Conflict
+      )
+    }
+
+    // Normaliser les données avant insertion (empty string → null)
+    const normalizedPhone = telephone?.trim() || null
+    const normalizedEmail = email.trim() // Obligatoire, déjà validé
+    const normalizedMessage = message?.trim() || null
+
+    // Début de transaction : créer le rendez-vous
+    const { data: newAppointment, error: insertError } = await supabaseAdmin
+      .from('appointments')
+      .insert([
+        {
+          salon_id: salonId,
+          service_id: service_id,
+          customer_name: nom.trim(),
+          customer_phone: normalizedPhone,
+          customer_email: normalizedEmail,
+          appointment_date: date,
+          start_time: heure,
+          status: 'pending',
+        },
+      ])
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Erreur insertion rendez-vous:', insertError)
+      return NextResponse.json(
+        { success: false, error: "Erreur lors de l'enregistrement du rendez-vous" },
+        { status: 500 }
+      )
+    }
+
+    const appointmentId = newAppointment.id
+
+    // Marquer tous les créneaux comme non disponibles
+    const { error: updateError } = await supabaseAdmin
+      .from('time_slots')
+      .update({ is_available: false })
+      .in('id', required_slot_ids)
+
+    if (updateError) {
+      console.error('Erreur mise à jour disponibilités:', updateError)
+      // Rollback : supprimer le rendez-vous créé
+      await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la réservation des créneaux' },
+        { status: 500 }
+      )
+    }
+
+    // Créer les liaisons dans appointment_slots
+    const slotsLinks = required_slot_ids.map((slotId, index) => ({
+      appointment_id: appointmentId,
+      time_slot_id: slotId,
+      slot_order: index + 1,
+    }))
+
+    const { error: linksError } = await supabaseAdmin
+      .from('appointment_slots')
+      .insert(slotsLinks)
+
+    if (linksError) {
+      console.error('Erreur création liens slots:', linksError)
+      // Rollback : supprimer le rendez-vous et libérer les créneaux
+      await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
+      await supabaseAdmin
+        .from('time_slots')
+        .update({ is_available: true })
+        .in('id', required_slot_ids)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la liaison des créneaux' },
+        { status: 500 }
+      )
+    }
+
+    console.log(`✅ Rendez-vous créé avec succès : ${appointmentId} (${required_slot_ids.length} créneaux réservés)`)
+
+    // Résoudre le nom du service pour les emails
+    const { data: serviceData, error: serviceError } = await supabaseAdmin
+      .from('services')
+      .select('name')
+      .eq('id', service_id)
+      .single()
+
+    const serviceName = serviceData?.name || service
+
     // Envoi des emails
     try {
-      await sendEmailToPatricia({ nom, telephone, email, service, date, heure, message })
-      await sendConfirmationToClient({ nom, telephone, email, service, date, heure, message })
+      await sendEmailToPatricia({ nom, telephone, email, service: serviceName, date, heure, message })
+      await sendConfirmationToClient({ nom, telephone, email, service: serviceName, date, heure, message })
     } catch (emailError) {
       console.error("Erreur lors de l'envoi des emails :", emailError)
       // On ne retourne pas d'erreur car l'enregistrement a réussi
       return NextResponse.json({
         success: true,
         message: "Demande enregistrée mais l'envoi d'email a échoué",
-        data: data[0],
+        data: newAppointment,
       })
     }
 
     return NextResponse.json({
       success: true,
       message: 'Demande enregistrée et emails envoyés',
-      data: data[0],
+      data: newAppointment,
+      slots_reserved: required_slot_ids.length,
     })
   } catch (error) {
     console.error('Erreur API :', error)

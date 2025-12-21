@@ -1,267 +1,253 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  format,
+  addDays,
+  addWeeks,
+  startOfWeek,
+  isToday,
+  isTomorrow,
+  subWeeks,
+} from 'date-fns'
+import { fr } from 'date-fns/locale'
 import axios from 'axios'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
-interface Disponibilite {
+import DayCard from '@/app/components/admin/DayCard'
+import TimeSlotPicker from '@/app/components/admin/TimeSlotPicker'
+import SettingsPanel from '@/app/components/admin/SettingsPanel'
+
+/* ----------------------------------------
+   Types
+---------------------------------------- */
+
+interface TimeSlot {
   id: string
-  date: string
-  heure: string
-  est_disponible: boolean
-  created_at: string
+  slot_date: string
+  start_time: string
+  is_available: boolean
 }
 
-export default function AdminDisponibilitesPage() {
-  const [disponibilites, setDisponibilites] = useState<Disponibilite[]>([])
-  const [loading, setLoading] = useState(true)
-  const [formData, setFormData] = useState({
-    date: '',
-    heure: '',
-  })
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+interface ExceptionalPeriod {
+  start_date: string
+  end_date: string
+  type: 'closed' | 'open'
+}
 
-  // Obtener todas las disponibilidades
-  const fetchDisponibilites = async () => {
-    try {
-      setLoading(true)
-      const response = await axios.get('/api/disponibilites')
-      setDisponibilites(response.data)
-    } catch (error) {
-      console.error('Error al obtener las disponibilidades:', error)
-      mostrarMensaje('error', 'Error al cargar las disponibilidades')
-    } finally {
-      setLoading(false)
-    }
+interface DayData {
+  date: Date
+  dateString: string
+  dayLabel: string
+  fullDateLabel: string
+  slots: TimeSlot[]
+}
+
+/* ----------------------------------------
+   Component
+---------------------------------------- */
+
+export default function AdminDisponibilitesPage() {
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+  const [exceptionalClosedDays, setExceptionalClosedDays] = useState<string[]>([])
+  const [exceptionalOpenDays, setExceptionalOpenDays] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  )
+
+  const [slotFrequency, setSlotFrequency] = useState(30)
+
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
+  const [selectedDateForSlot, setSelectedDateForSlot] = useState('')
+  const [selectedDayLabelForSlot, setSelectedDayLabelForSlot] = useState('')
+
+  const [openDays, setOpenDays] = useState<Set<string>>(new Set())
+
+  /* ----------------------------------------
+     Fetch
+  ---------------------------------------- */
+
+  const fetchTimeSlots = async () => {
+    const { data } = await axios.get('/api/admin/time-slots')
+    setTimeSlots(data.success ? data.data : data)
+  }
+
+  const fetchExceptionalPeriods = async () => {
+    const { data } = await axios.get('/api/admin/horaires-exceptionnels')
+
+    const closed: string[] = []
+    const open: string[] = []
+
+    ;(data.data as ExceptionalPeriod[]).forEach(period => {
+      const start = new Date(period.start_date)
+      const end = new Date(period.end_date)
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = format(d, 'yyyy-MM-dd')
+        if (period.type === 'closed') closed.push(dateStr)
+        if (period.type === 'open') open.push(dateStr)
+      }
+    })
+
+    setExceptionalClosedDays(closed)
+    setExceptionalOpenDays(open)
   }
 
   useEffect(() => {
-    fetchDisponibilites()
+    setLoading(true)
+    Promise.all([fetchTimeSlots(), fetchExceptionalPeriods()])
+      .finally(() => setLoading(false))
   }, [])
 
-  // Mostrar mensaje temporal
-  const mostrarMensaje = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage(null), 4000)
+  /* ----------------------------------------
+     Slots CRUD
+  ---------------------------------------- */
+
+  const handleAddSlot = async (time: string | string[]) => {
+    const times = Array.isArray(time) ? time : [time]
+
+    const { data } = await axios.post('/api/admin/time-slots', {
+      slot_date: selectedDateForSlot,
+      start_times: times,
+    })
+
+    const newSlots = data.success ? data.data : data
+    setTimeSlots(prev => [...prev, ...newSlots])
   }
 
-  // Manejar cambios del formulario
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+  const handleDeleteSlot = async (id: string) => {
+    await axios.delete(`/api/admin/time-slots/${id}`)
+    setTimeSlots(prev => prev.filter(s => s.id !== id))
   }
 
-  // Agregar nueva disponibilidad
-  const handleAgregar = async (e: React.FormEvent) => {
-    e.preventDefault()
+  /* ----------------------------------------
+     Week days
+  ---------------------------------------- */
 
-    if (!formData.date || !formData.heure) {
-      mostrarMensaje('error', 'Por favor, completa todos los campos')
-      return
+  const weekDays: DayData[] = useMemo(() => {
+    const days: DayData[] = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(currentWeekStart, i)
+      date.setHours(0, 0, 0, 0)
+      if (date < today) continue
+
+      const dateString = format(date, 'yyyy-MM-dd')
+
+      days.push({
+        date,
+        dateString,
+        dayLabel: format(date, 'EEEE', { locale: fr }),
+        fullDateLabel: format(date, 'd MMMM yyyy', { locale: fr }),
+        slots: timeSlots.filter(s => s.slot_date === dateString),
+      })
     }
 
-    try {
-      await axios.post('/api/disponibilites', formData)
-      mostrarMensaje('success', 'Horario añadido con éxito')
-      setFormData({ date: '', heure: '' })
-      fetchDisponibilites()
-    } catch (error: any) {
-      console.error('Error al agregar:', error)
-      const errorMsg = error.response?.data?.error || 'Error al agregar el horario'
-      mostrarMensaje('error', errorMsg)
-    }
+    return days
+  }, [currentWeekStart, timeSlots])
+
+  /* ----------------------------------------
+     Render
+  ---------------------------------------- */
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto" />
+      </div>
+    )
   }
-
-  // Eliminar una disponibilidad
-  const handleEliminar = async (id: string) => {
-    try {
-      await axios.delete(`/api/disponibilites?id=${id}`)
-      mostrarMensaje('success', 'Horario eliminado con éxito')
-      fetchDisponibilites()
-    } catch (error) {
-      console.error('Error al eliminar:', error)
-      mostrarMensaje('error', 'Error al eliminar el horario')
-    }
-  }
-
-  // Formatear fecha en español
-  const formaterDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00')
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      day: 'numeric', 
-      month: 'long',
-      year: 'numeric'
-    }
-    return date.toLocaleDateString('es-ES', options)
-  }
-
-  // Filtrar horarios pasados
-  const now = new Date()
-  const disponibilitesFutures = disponibilites.filter((dispo) => {
-    const dispoDateTime = new Date(`${dispo.date}T${dispo.heure}`)
-    return dispoDateTime > now
-  })
-
-  // Agrupar por fecha
-  const disponibilitesParDate = disponibilitesFutures.reduce((acc, dispo) => {
-    if (!acc[dispo.date]) {
-      acc[dispo.date] = []
-    }
-    acc[dispo.date].push(dispo)
-    return acc
-  }, {} as Record<string, Disponibilite[]>)
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Banner explicativo */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-        <h3 className="font-semibold text-dark mb-2 text-sm sm:text-base">
-          ¿Cómo funciona?
-        </h3>
-        <p className="text-xs sm:text-sm text-gray-700">
-          Añade tus horarios disponibles. Los clientes verán automáticamente estos horarios en el calendario.
-        </p>
-      </div>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-semibold mb-4">Disponibilités</h1>
 
-      {/* Encabezado */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-brand font-normal text-dark mb-1">
-          Disponibilidades
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Gestiona tus horarios disponibles
-        </p>
-      </div>
+      <SettingsPanel
+        frequency={slotFrequency}
+        onFrequencyChange={setSlotFrequency}
+      />
 
-      {/* Mensaje de notificación */}
-      {message && (
-        <div
-          className={`mb-4 sm:mb-6 p-4 rounded-lg text-sm sm:text-base ${
-            message.type === 'success'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      {/* Layout principal */}
-      <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
-        {/* Formulario de creación */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:sticky lg:top-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-dark mb-4">
-              Añadir un horario
-            </h2>
-
-            <form onSubmit={handleAgregar} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha
-                </label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-md p-3 text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hora
-                </label>
-                <input
-                  type="time"
-                  name="heure"
-                  value={formData.heure}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 rounded-md p-3 text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-primary text-white py-3 sm:py-4 rounded-md hover:bg-[#a68b36] active:bg-[#9a7a30] transition-colors font-medium text-base touch-manipulation"
-              >
-                Añadir horario
-              </button>
-            </form>
-          </div>
+      {/* Navigation semaine (responsive) */}
+      <div className="mt-4 bg-gray-50 rounded-lg p-3 space-y-2 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+        <div className="text-sm font-semibold text-gray-800 text-center sm:text-left">
+          Semaine du{' '}
+          {format(currentWeekStart, 'd MMM', { locale: fr })} au{' '}
+          {format(addDays(currentWeekStart, 6), 'd MMM yyyy', { locale: fr })}
         </div>
 
-        {/* Lista de disponibilidades */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-dark mb-4">
-              Horarios existentes
-            </h2>
+        <div className="flex items-center justify-between sm:justify-end gap-2">
+          <button
+            onClick={() => setCurrentWeekStart(prev => subWeeks(prev, 1))}
+            className="flex items-center gap-1 px-3 py-2 text-sm rounded-md bg-white border hover:bg-gray-100"
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Précédente</span>
+          </button>
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-gray-500">Cargando...</p>
-              </div>
-            ) : Object.keys(disponibilitesParDate).length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 mb-2">No hay horarios próximos</p>
-                <p className="text-sm text-gray-400">
-                  Añade nuevos horarios con el formulario.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {Object.keys(disponibilitesParDate)
-                  .sort()
-                  .map((date) => (
-                    <div key={date} className="border-b border-gray-200 pb-4 last:border-b-0">
-                      <h3 className="text-base sm:text-lg font-semibold text-dark mb-3 capitalize">
-                        {formaterDate(date)}
-                      </h3>
-
-                      <div className="space-y-2">
-                        {disponibilitesParDate[date]
-                          .sort((a, b) => a.heure.localeCompare(b.heure))
-                          .map((dispo) => (
-                            <div
-                              key={dispo.id}
-                              className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="text-base sm:text-lg font-medium text-dark min-w-[60px]">
-                                  {dispo.heure.substring(0, 5)}
-                                </span>
-                                <span
-                                  className={`text-xs px-3 py-1 rounded-full font-medium ${
-                                    dispo.est_disponible
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-red-100 text-red-700'
-                                  }`}
-                                >
-                                  {dispo.est_disponible ? 'Libre' : 'Reservado'}
-                                </span>
-                              </div>
-
-                              <button
-                                onClick={() => handleEliminar(dispo.id)}
-                                className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md text-sm font-medium transition-colors touch-manipulation active:scale-95"
-                              >
-                                Eliminar
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setCurrentWeekStart(prev => addWeeks(prev, 1))}
+            className="flex items-center gap-1 px-3 py-2 text-sm rounded-md bg-white border hover:bg-gray-100"
+          >
+            <span className="hidden sm:inline">Suivante</span>
+            <ChevronRightIcon className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* Jours */}
+      <div className="space-y-3 mt-6">
+        {weekDays.map(day => {
+          const exceptionalStatus: 'none' | 'closed' | 'open' =
+            exceptionalClosedDays.includes(day.dateString)
+              ? 'closed'
+              : exceptionalOpenDays.includes(day.dateString)
+              ? 'open'
+              : 'none'
+
+          return (
+            <DayCard
+              key={day.dateString}
+              date={day.fullDateLabel}
+              dayLabel={day.dayLabel}
+              slots={day.slots}
+              exceptionalStatus={exceptionalStatus}
+              isToday={isToday(day.date)}
+              isTomorrow={isTomorrow(day.date)}
+              isOpen={openDays.has(day.dateString)}
+              onToggle={() =>
+                setOpenDays(prev => {
+                  const next = new Set(prev)
+                  next.has(day.dateString)
+                    ? next.delete(day.dateString)
+                    : next.add(day.dateString)
+                  return next
+                })
+              }
+              onAddSlot={() => {
+                setSelectedDateForSlot(day.dateString)
+                setSelectedDayLabelForSlot(day.fullDateLabel)
+                setIsTimePickerOpen(true)
+              }}
+              onDeleteSlot={handleDeleteSlot}
+            />
+          )
+        })}
+      </div>
+
+      <TimeSlotPicker
+        isOpen={isTimePickerOpen}
+        onClose={() => setIsTimePickerOpen(false)}
+        onConfirm={handleAddSlot}
+        selectedDate={selectedDayLabelForSlot}
+        frequency={slotFrequency}
+        existingSlots={timeSlots
+          .filter(s => s.slot_date === selectedDateForSlot)
+          .map(s => s.start_time.substring(0, 5))}
+      />
     </div>
   )
 }

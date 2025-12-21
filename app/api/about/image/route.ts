@@ -1,0 +1,45 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { getDefaultSalonId } from '../../../../lib/salonContext'
+
+/**
+ * GET — Récupère l'image "À propos" (PUBLIC)
+ */
+export async function GET() {
+  try {
+    const supabase = await createClient()
+    const salonId = getDefaultSalonId()
+
+    const { data, error } = await supabase
+      .from('images')
+      .select('image_url, alt_text')
+      .eq('salon_id', salonId)
+      .eq('type', 'about')
+      .eq('is_visible', true)
+      .is('deleted_at', null)
+      .single()
+
+    // PGRST116 = aucune ligne (normal si pas d'image)
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erreur Supabase GET about image:', error)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la récupération de l\'image' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        imageUrl: data?.image_url ?? null,
+        altText: data?.alt_text ?? null,
+      },
+    })
+  } catch (error) {
+    console.error('Erreur API GET about image:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
+  }
+}

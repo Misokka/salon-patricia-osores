@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getDefaultSalonId } from '../../../lib/salonContext'
 
 // Initialiser le client Supabase
 const supabase = createClient(
@@ -16,22 +17,22 @@ export async function GET(request: Request) {
     const disponibleUniquement = searchParams.get('disponibleUniquement') === 'true'
 
     let query = supabase
-      .from('disponibilites')
+      .from('time_slots')
       .select('*')
-      .order('date', { ascending: true })
-      .order('heure', { ascending: true })
+      .order('slot_date', { ascending: true })
+      .order('start_time', { ascending: true })
 
     // Filtrer par période si spécifié
     if (dateDebut) {
-      query = query.gte('date', dateDebut)
+      query = query.gte('slot_date', dateDebut)
     }
     if (dateFin) {
-      query = query.lte('date', dateFin)
+      query = query.lte('slot_date', dateFin)
     }
 
     // Filtrer uniquement les créneaux disponibles si demandé
     if (disponibleUniquement) {
-      query = query.eq('est_disponible', true)
+      query = query.eq('is_available', true)
     }
 
     const { data, error } = await query
@@ -44,14 +45,69 @@ export async function GET(request: Request) {
       )
     }
 
-    // Filtrer les créneaux passés (date + heure)
+    const salonId = getDefaultSalonId()
+
+    // Récupérer les jours fermés
+    const { data: closedDays } = await supabase
+      .from('opening_days')
+      .select('day_of_week')
+      .eq('salon_id', salonId)
+      .eq('is_open', false)
+
+    const closedDaysSet = new Set((closedDays || []).map((d) => d.day_of_week))
+
+    // Récupérer les fermetures exceptionnelles
+    const { data: exceptionalClosed } = await supabase
+      .from('salon_exceptional_hours')
+      .select('start_date, end_date')
+      .eq('salon_id', salonId)
+      .eq('type', 'closed')
+
+    // Récupérer les ouvertures exceptionnelles
+    const { data: exceptionalOpen } = await supabase
+      .from('salon_exceptional_hours')
+      .select('start_date, end_date')
+      .eq('salon_id', salonId)
+      .eq('type', 'open')
+
+    // Filtrer les créneaux
     const now = new Date()
-    const futureData = (data || []).filter((dispo) => {
-      const dispoDateTime = new Date(`${dispo.date}T${dispo.heure}`)
-      return dispoDateTime > now
+    const filteredData = (data || []).filter((dispo) => {
+      // Exclure créneaux passés
+      const dispoDateTime = new Date(`${dispo.slot_date}T${dispo.start_time}`)
+      if (dispoDateTime <= now) return false
+
+      // Vérifier si c'est une ouverture exceptionnelle
+      const isExceptionallyOpen = (exceptionalOpen || []).some((exc) => {
+        return dispo.slot_date >= exc.start_date && dispo.slot_date <= exc.end_date
+      })
+
+      // Si ouverture exceptionnelle, ne pas appliquer le filtre des jours fermés
+      if (!isExceptionallyOpen) {
+        // Exclure jours fermés normalement
+        const dispoDate = new Date(dispo.slot_date)
+        const dayOfWeek = (dispoDate.getDay() + 6) % 7 // Convertir dimanche=0 en dimanche=6
+        if (closedDaysSet.has(dayOfWeek)) return false
+      }
+
+      // Exclure fermetures exceptionnelles
+      const isExceptionallyClosed = (exceptionalClosed || []).some((exc) => {
+        return dispo.slot_date >= exc.start_date && dispo.slot_date <= exc.end_date
+      })
+      if (isExceptionallyClosed) return false
+
+      return true
     })
 
-    return NextResponse.json(futureData)
+    // Transformer les données pour le format attendu par le frontend
+    const transformedData = filteredData.map(slot => ({
+      id: slot.id,
+      date: slot.slot_date,
+      heure: slot.start_time,
+      est_disponible: slot.is_available
+    }))
+
+    return NextResponse.json(transformedData)
   } catch (error) {
     console.error('Erreur serveur GET:', error)
     return NextResponse.json(
@@ -77,10 +133,10 @@ export async function POST(request: Request) {
 
     // Vérifier si le créneau existe déjà
     const { data: existing } = await supabase
-      .from('disponibilites')
+      .from('time_slots')
       .select('id')
-      .eq('date', date)
-      .eq('heure', heure)
+      .eq('slot_date', date)
+      .eq('start_time', heure)
       .single()
 
     if (existing) {
@@ -92,8 +148,8 @@ export async function POST(request: Request) {
 
     // Insérer le nouveau créneau
     const { data, error } = await supabase
-      .from('disponibilites')
-      .insert([{ date, heure, est_disponible }])
+      .from('time_slots')
+      .insert([{ slot_date: date, start_time: heure, is_available: est_disponible }])
       .select()
       .single()
 
@@ -129,7 +185,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabase
-      .from('disponibilites')
+      .from('time_slots')
       .delete()
       .eq('id', id)
 
@@ -165,8 +221,8 @@ export async function PATCH(request: Request) {
     }
 
     const { data, error } = await supabase
-      .from('disponibilites')
-      .update({ est_disponible })
+      .from('time_slots')
+      .update({ is_available: est_disponible })
       .eq('id', id)
       .select()
       .single()

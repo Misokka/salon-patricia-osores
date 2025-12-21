@@ -1,4 +1,7 @@
+"use client";
+
 import React from "react";
+import { motion, easeOut } from "framer-motion";
 
 interface ButtonProps {
   text: string;
@@ -20,24 +23,43 @@ export default function Button({
 
   const variants = {
     primary:
-      "bg-primary text-light hover:bg-opacity-90 shadow-md hover:shadow-lg hover:scale-[1.02]",
+      "bg-primary text-light hover:bg-opacity-90 shadow-md hover:shadow-lg",
     secondary:
       "bg-light text-dark border border-primary hover:bg-primary hover:text-light",
   };
 
   const combined = `${baseStyle} ${variants[variant]} ${className}`;
 
+  const hoverAnimation = {
+    y: -2,
+    transition: { duration: 0.2, ease: easeOut },
+  };
+
+  const tapAnimation = {
+    scale: 0.98,
+  };
+
   if (href) {
     return (
-      <a href={href} className={combined}>
+      <motion.a
+        href={href}
+        className={combined}
+        whileHover={hoverAnimation}
+        whileTap={tapAnimation}
+      >
         {text}
-      </a>
+      </motion.a>
     );
   }
 
   return (
-    <button onClick={onClick} className={combined}>
+    <motion.button
+      onClick={onClick}
+      className={combined}
+      whileHover={hoverAnimation}
+      whileTap={tapAnimation}
+    >
       {text}
-    </button>
+    </motion.button>
   );
 }

@@ -7,17 +7,20 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import './globals.css'
 
+/**
+ * Page d'accueil - Structure HTML sémantique optimisée SEO
+ * H1 dans Hero, H2 dans chaque section
+ */
 export default function Home() {
   return (
     <main className="bg-light text-dark">
-  <Hero />
-  <Services />
-  <Gallery />
-  <About />
-  <Testimonials />
-  <Contact />
-  <Footer />
-</main>
-
+      <Hero />
+      <Services />
+      <Gallery />
+      <About />
+      <Testimonials />
+      <Contact />
+      <Footer />
+    </main>
   )
 }

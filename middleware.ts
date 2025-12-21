@@ -20,8 +20,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Vérifier que l'utilisateur a le rôle admin
-    const userRole = user.user_metadata?.role
+    // Vérifier que l'utilisateur a le rôle admin (dans app_metadata, pas user_metadata)
+    const userRole = user.app_metadata?.role
     if (userRole !== 'admin') {
       // Si l'utilisateur n'est pas admin, rediriger vers la page d'accueil
       const redirectUrl = new URL('/', request.url)
@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   if (isLoginPage) {
     const { data: { user } } = await supabase.auth.getUser()
     
-    if (user && user.user_metadata?.role === 'admin') {
+    if (user && user.app_metadata?.role === 'admin') {
       // Rediriger vers le tableau de bord si déjà connecté
       const redirectUrl = new URL('/admin', request.url)
       return NextResponse.redirect(redirectUrl)

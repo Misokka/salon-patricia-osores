@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import salonConfig from '@/config/salon.config'
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -20,23 +23,24 @@ export default function AdminLoginPage() {
     try {
       const supabase = createClient()
       
-      // Autenticación con Supabase
+      // Authentification avec Supabase
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (authError) {
-        setError('Correo electrónico o contraseña incorrectos')
+        setError('Adresse e-mail ou mot de passe incorrect')
         setLoading(false)
         return
       }
 
-      // Verificar que el usuario tenga el rol de administrador
-      const userRole = data.user?.user_metadata?.role
+      // Vérifier que l'utilisateur a le rôle administrateur
+      // Le rôle est stocké dans app_metadata, pas user_metadata
+      const userRole = data.user?.app_metadata?.role
       if (userRole !== 'admin') {
         await supabase.auth.signOut()
-        setError('Acceso no autorizado')
+        setError('Accès non autorisé')
         setLoading(false)
         return
       }
@@ -45,8 +49,8 @@ export default function AdminLoginPage() {
       router.push(redirectTo)
       router.refresh()
     } catch (err) {
-      console.error('Error al iniciar sesión:', err)
-      setError('Ocurrió un error durante la conexión')
+      console.error('Erreur lors de la connexion :', err)
+      setError('Une erreur est survenue lors de la connexion')
       setLoading(false)
     }
   }
@@ -54,21 +58,21 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-light via-white to-light flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo y título */}
+        {/* Logo et titre */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-brand font-normal text-dark mb-2">
-            Salón Patricia Osores
+            {salonConfig.admin.salon}
           </h1>
-          <p className="text-gray-600">Área de Administración</p>
+          <p className="text-gray-600">Espace Administrateur</p>
         </div>
 
-        {/* Tarjeta de inicio de sesión */}
+        {/* Carte de connexion */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100">
           <h2 className="text-2xl font-semibold text-dark mb-6 text-center">
-            Iniciar sesión
+            Connexion
           </h2>
 
-          {/* Mensaje de error */}
+          {/* Message d'erreur */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg text-red-700">
               <div className="flex items-center space-x-2">
@@ -77,11 +81,11 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          {/* Formulario */}
+          {/* Formulaire */}
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correo electrónico
+                Adresse e-mail
               </label>
               <input
                 type="email"
@@ -89,14 +93,14 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                placeholder="paty10j@hotmail.com"
+                placeholder="votremail@gmail.com"
                 className="w-full border-2 border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña
+                Mot de passe
               </label>
               <input
                 type="password"
@@ -117,31 +121,48 @@ export default function AdminLoginPage() {
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Iniciando sesión...</span>
+                  <span>Connexion en cours...</span>
                 </>
               ) : (
                 <>
-                  <span>Entrar</span>
+                  <span>Se connecter</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Información de seguridad */}
+          {/* Informations de sécurité */}
           <div className="mt-6 pt-6 border-t-2 border-gray-100">
             <div className="flex items-start space-x-2 text-sm text-gray-600">
               <p>
-                Conexión segura. Su información está protegida con cifrado de nivel bancario.
+                Connexion sécurisée. Vos informations sont protégées.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Pie de página */}
+        {/* Pied de page */}
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>© 2025 Salón Patricia Osores. Todos los derechos reservados.</p>
+          <p>© 2025 Salón Patricia Osores. Tous droits réservés.</p>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-light via-white to-light flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <p className="text-gray-600">Chargement...</p>
+          </div>
+        </div>
+      }
+    >
+      <AdminLoginForm />
+    </Suspense>
   )
 }

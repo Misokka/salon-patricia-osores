@@ -3,23 +3,21 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+import type { ServiceSelection } from '@/types/service-selection'
 
-interface ServiceSelectionne {
-  name: string
-  duration: string
-  price: string
-}
+
 
 interface CreneauSelectionne {
   date: string
   heure: string
+  required_slots?: Array<{ id: string; heure: string }>
 }
 
 export default function ConfirmationPage() {
   const router = useRouter()
   
   // États pour les données précédentes
-  const [serviceSelectionne, setServiceSelectionne] = useState<ServiceSelectionne | null>(null)
+  const [serviceSelectionne, setServiceSelectionne] = useState<ServiceSelection | null>(null)
   const [creneauSelectionne, setCreneauSelectionne] = useState<CreneauSelectionne | null>(null)
   
   // États pour le formulaire
@@ -84,15 +82,17 @@ export default function ConfirmationPage() {
     setError(null)
 
     try {
-      // Envoyer la demande de rendez-vous
+      // Envoyer la demande de rendez-vous avec les créneaux requis
       const response = await axios.post('/api/rendezvous', {
         nom: formData.nom,
         telephone: formData.telephone,
         email: formData.email,
         service: serviceSelectionne.name,
+        service_id: serviceSelectionne.id,
         date: creneauSelectionne.date,
         heure: creneauSelectionne.heure,
         message: formData.message,
+        required_slot_ids: creneauSelectionne.required_slots?.map(s => s.id) || [],
       })
 
       if (response.data.success) {
@@ -169,11 +169,11 @@ if (success) {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Durée :</span>
-                <span className="font-medium text-dark">{serviceSelectionne.duration}</span>
+                <span className="font-medium text-dark">{serviceSelectionne.duration_label}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Prix :</span>
-                <span className="font-medium text-dark">{serviceSelectionne.price}</span>
+                <span className="font-medium text-dark">{serviceSelectionne.price_label}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Date :</span>
@@ -248,7 +248,7 @@ if (success) {
                     {serviceSelectionne.name}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    {serviceSelectionne.duration} · {serviceSelectionne.price}
+                    {serviceSelectionne.duration_label} · {serviceSelectionne.price_label}
                   </p>
                 </div>
                 <button
@@ -371,8 +371,19 @@ if (success) {
               </div>
 
               <p className="text-xs text-gray-500 text-center mt-4">
-                En confirmant, vous acceptez que vos données soient utilisées pour traiter votre demande de rendez-vous.
+                En confirmant, vous acceptez que vos données soient utilisées pour traiter votre demande de rendez-vous,
+                conformément à notre{' '}
+                <a
+                  href="/politique"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline hover:text-accent transition-colors"
+                >
+                  politique de confidentialité
+                </a>.
               </p>
+
+
             </form>
           </div>
         </div>

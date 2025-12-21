@@ -1,6 +1,6 @@
 {
-  "name": "zigouplex-bakery",
-  "version": "0.1.0",
+  "name": "coiffeurs-template",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,11 +9,13 @@
     "sitemap": "next-sitemap"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.79.0",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.26",
     "googleapis": "^165.0.0",
     "next": "^15.0.3",
     "next-sitemap": "^4.2.3",

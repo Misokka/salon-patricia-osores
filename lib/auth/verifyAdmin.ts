@@ -21,8 +21,8 @@ export async function verifyAdminAuth() {
     }
   }
 
-  // Vérifier si l'utilisateur a le rôle admin
-  const userRole = user.user_metadata?.role
+  // Vérifier si l'utilisateur a le rôle admin (dans app_metadata, pas user_metadata)
+  const userRole = user.app_metadata?.role
   if (userRole !== 'admin') {
     return {
       user: null,

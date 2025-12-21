@@ -1,0 +1,140 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
+import { getDefaultSalonId } from '../../../../lib/salonContext'
+
+/**
+ * GET - Récupère tous les créneaux (time slots)
+ */
+export async function GET() {
+  const { user, error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
+  try {
+    const supabase = await createClient()
+    const salonId = getDefaultSalonId()
+    const { data, error } = await supabase
+      .from('time_slots')
+      .select('*')
+      .eq('salon_id', salonId)
+      .order('slot_date', { ascending: true })
+      .order('start_time', { ascending: true })
+
+    if (error) {
+      console.error('Erreur Supabase GET time slots:', error)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la récupération des créneaux' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data || []
+    })
+  } catch (error) {
+    console.error('Erreur API GET time slots:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * POST - Crée un ou plusieurs créneaux
+ */
+export async function POST(request: Request) {
+  const { user, error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
+  try {
+    const supabase = await createClient()
+    const salonId = getDefaultSalonId()
+    const body = await request.json()
+    const { slot_date, start_times } = body
+
+    if (!slot_date || !start_times || !Array.isArray(start_times)) {
+      return NextResponse.json(
+        { success: false, error: 'Champs obligatoires manquants' },
+        { status: 400 }
+      )
+    }
+
+    const slots = start_times.map((time) => ({
+      salon_id: salonId,
+      slot_date,
+      start_time: time,
+      is_available: true,
+    }))
+
+    const { data, error } = await supabase
+      .from('time_slots')
+      .insert(slots)
+      .select()
+
+    if (error) {
+      console.error('Erreur Supabase POST time slots:', error)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la création des créneaux' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data || []
+    })
+  } catch (error) {
+    console.error('Erreur API POST time slots:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE - Supprime un ou plusieurs créneaux
+ */
+export async function DELETE(request: Request) {
+  const { user, error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const slot_date = searchParams.get('slot_date')
+    const salonId = getDefaultSalonId()
+
+    if (slot_date) {
+      // Supprimer tous les créneaux d'une date
+      const { error } = await supabase
+        .from('time_slots')
+        .delete()
+        .eq('slot_date', slot_date)
+        .eq('salon_id', salonId)
+
+      if (error) {
+        console.error('Erreur Supabase DELETE time slots by date:', error)
+        return NextResponse.json(
+          { success: false, error: 'Erreur lors de la suppression' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Paramètre slot_date manquant' },
+      { status: 400 }
+    )
+  } catch (error) {
+    console.error('Erreur API DELETE time slots:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
+  }
+}

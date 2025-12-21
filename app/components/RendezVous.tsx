@@ -24,7 +24,7 @@ export default function RendezVous() {
     e.preventDefault()
     setLoading(true)
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/rendezvous`, formData)
+      await axios.post(`/rendezvous`, formData)
       setSuccess(true)
       setFormData({
         nom: '',

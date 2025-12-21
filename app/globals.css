@@ -1,3 +1,70 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Smooth scroll pour toute la page */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Respecter prefers-reduced-motion pour l'accessibilité */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Amélioration du focus pour l'accessibilité */
+@layer utilities {
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+}
+
+/* Styles spécifiques pour l'interface admin */
+@layer components {
+  /* Variables CSS pour l'admin (sidebar width, transitions, etc.) */
+  :root {
+    --admin-sidebar-width-expanded: 16rem; /* 256px / w-64 */
+    --admin-sidebar-width-collapsed: 5rem; /* 80px / w-20 */
+    --admin-sidebar-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --admin-bg: #f9fafb; /* gray-50 */
+    --admin-sidebar-bg: #ffffff;
+    --admin-border: #e5e7eb; /* gray-200 */
+  }
+
+  /* Scrollbar personnalisée pour l'admin (sobre et discrète) */
+  .admin-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .admin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .admin-scrollbar::-webkit-scrollbar-thumb {
+    background: #d1d5db; /* gray-300 */
+    border-radius: 4px;
+  }
+
+  .admin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; /* gray-400 */
+  }
+
+  /* Support Firefox */
+  .admin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+  }
+}

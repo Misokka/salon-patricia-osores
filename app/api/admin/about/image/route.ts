@@ -1,0 +1,158 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
+import { getDefaultSalonId } from '../../../../../lib/salonContext'
+
+/**
+ * GET — Récupère l'image "À propos"
+ * Règle : images.type = 'about'
+ */
+export async function GET() {
+  try {
+    const supabase = await createClient()
+    const salonId = getDefaultSalonId()
+
+    const { data, error } = await supabase
+      .from('images')
+      .select('image_url')
+      .eq('salon_id', salonId)
+      .eq('type', 'about')
+      .is('deleted_at', null)
+      .single()
+
+    // PGRST116 = aucune ligne (normal si pas d’image)
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erreur Supabase GET about image:', error)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la récupération de l’image' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        imageUrl: data?.image_url ?? null,
+      },
+    })
+  } catch (error) {
+    console.error('Erreur API GET about image:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH — Crée / met à jour / supprime l'image "À propos"
+ */
+export async function PATCH(request: Request) {
+  const { error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
+  try {
+    const supabase = await createClient()
+    const salonId = getDefaultSalonId()
+    const { imageUrl } = await request.json()
+
+    /**
+     * SUPPRESSION (soft delete)
+     */
+    if (!imageUrl) {
+      const { error } = await supabase
+        .from('images')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('salon_id', salonId)
+        .eq('type', 'about')
+        .is('deleted_at', null)
+
+      if (error) {
+        console.error('Erreur Supabase DELETE about image:', error)
+        return NextResponse.json(
+          { success: false, error: 'Erreur lors de la suppression' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Image À propos supprimée',
+        data: { imageUrl: null },
+      })
+    }
+
+    /**
+     * UPSERT
+     */
+    const { data: existing } = await supabase
+      .from('images')
+      .select('id')
+      .eq('salon_id', salonId)
+      .eq('type', 'about')
+      .is('deleted_at', null)
+      .single()
+
+    let result
+
+    if (existing) {
+      // UPDATE
+      const { data, error } = await supabase
+        .from('images')
+        .update({
+          image_url: imageUrl,
+          alt_text: 'Image section À propos',
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Erreur Supabase UPDATE about image:', error)
+        return NextResponse.json(
+          { success: false, error: 'Erreur lors de la mise à jour' },
+          { status: 500 }
+        )
+      }
+
+      result = data
+    } else {
+      // INSERT
+      const { data, error } = await supabase
+        .from('images')
+        .insert({
+          salon_id: salonId,
+          service_id: null,
+          type: 'about',
+          image_url: imageUrl,
+          alt_text: 'Image section À propos',
+          position: 0,
+          is_visible: true,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Erreur Supabase INSERT about image:', error)
+        return NextResponse.json(
+          { success: false, error: 'Erreur lors de la création' },
+          { status: 500 }
+        )
+      }
+
+      result = data
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Image À propos mise à jour',
+      data: { imageUrl: result.image_url },
+    })
+  } catch (error) {
+    console.error('Erreur API PATCH about image:', error)
+    return NextResponse.json(
+      { success: false, error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
+  }
+}

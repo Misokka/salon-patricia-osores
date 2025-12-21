@@ -1,240 +1,267 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import axios from 'axios'
+import {
+  FaCalendarCheck,
+  FaClock,
+  FaCalendarAlt,
+  FaCalendarDay,
+  FaQuestionCircle,
+} from 'react-icons/fa'
+import { salonConfig } from '@/config/salon.config'
 
-interface DashboardData {
-  prochainRendezvous: {
-    nom: string
-    service: string
-    date: string
-    heure: string
-  } | null
-  statistiques: {
-    rendezvousEnAttente: number
-    disponibilitesLibresSemaine: number
-    rendezvousAVenir: number
-    rendezvousCeMois: number
-  }
+import KPICard from '@/app/components/admin/KPICard'
+import NextAppointmentCard from '@/app/components/admin/NextAppointmentCard'
+import QuickActionCard from '@/app/components/admin/QuickActionCard'
+import RecentRequestsCard from '@/app/components/admin/RecentRequestsCard'
+
+/* ----------------------------------------
+   Types
+---------------------------------------- */
+
+import type { Appointment } from '@/types/appointment'
+
+
+interface DashboardStats {
+  pendingCount: number
+  upcomingCount: number
+  todayCount: number
+  weekCount: number
+  nextAppointment: Appointment | null
+  latestRequest: Appointment | null
 }
 
-export default function AdminDashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null)
+/* ----------------------------------------
+   Page
+---------------------------------------- */
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    pendingCount: 0,
+    upcomingCount: 0,
+    todayCount: 0,
+    weekCount: 0,
+    nextAppointment: null,
+    latestRequest: null,
+  })
+
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchDashboardData()
+    loadDashboard()
   }, [])
 
-  const fetchDashboardData = async () => {
+  /* ----------------------------------------
+     Data loader
+  ---------------------------------------- */
+
+  const loadDashboard = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/admin/dashboard')
-      if (response.data.success) {
-        setData(response.data.data)
+
+      const today = new Date()
+      const todayStr = today.toISOString().split('T')[0]
+      const nowTime = today.toTimeString().slice(0, 5)
+
+      // Semaine courante (lundi → dimanche)
+      const monday = new Date(today)
+      monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+
+      const weekStart = monday.toISOString().split('T')[0]
+      const weekEnd = sunday.toISOString().split('T')[0]
+
+      const { data: response } = await axios.get('/api/admin/rendezvous')
+
+      if (!response.success) {
+        console.error('Erreur API dashboard')
+        return
       }
+
+      const appointments: Appointment[] = response.data || []
+
+      /* -----------------------------
+         KPIs
+      ----------------------------- */
+
+      const pendingAppointments = appointments.filter(
+        rdv => rdv.status === 'pending'
+      )
+
+      const pendingCount = pendingAppointments.length
+
+      const upcomingCount = appointments.filter(
+        rdv =>
+          rdv.status === 'accepted' &&
+          rdv.appointment_date >= todayStr
+      ).length
+
+      const todayCount = appointments.filter(
+        rdv =>
+          (rdv.status === 'pending' || rdv.status === 'accepted') &&
+          rdv.appointment_date === todayStr
+      ).length
+
+      const weekCount = appointments.filter(
+        rdv =>
+          (rdv.status === 'pending' || rdv.status === 'accepted') &&
+          rdv.appointment_date >= weekStart &&
+          rdv.appointment_date <= weekEnd
+      ).length
+
+      /* -----------------------------
+         Prochain RDV
+      ----------------------------- */
+
+      const nextAppointment =
+        appointments
+          .filter(rdv => rdv.status === 'pending' || rdv.status === 'accepted')
+          .sort((a, b) =>
+            `${a.appointment_date}T${a.start_time}`.localeCompare(
+              `${b.appointment_date}T${b.start_time}`
+            )
+          )
+          .find(rdv => {
+            if (rdv.appointment_date > todayStr) return true
+            if (rdv.appointment_date === todayStr)
+              return rdv.start_time >= nowTime
+            return false
+          }) ?? null
+
+      /* -----------------------------
+         Dernière demande (1 seule)
+      ----------------------------- */
+
+      const latestRequest =
+        pendingAppointments
+          .sort((a, b) =>
+            `${a.appointment_date}T${a.start_time}`.localeCompare(
+              `${b.appointment_date}T${b.start_time}`
+            )
+          )[0] ?? null
+
+      setStats({
+        pendingCount,
+        upcomingCount,
+        todayCount,
+        weekCount,
+        nextAppointment,
+        latestRequest,
+      })
     } catch (error) {
-      console.error('Error al cargar el panel de control:', error)
+      console.error('Dashboard error:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const formaterDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00')
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })
-  }
+  /* ----------------------------------------
+     Loading
+  ---------------------------------------- */
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-gray-500">Chargement du tableau de bord...</p>
         </div>
       </div>
     )
   }
 
+  /* ----------------------------------------
+     Render
+  ---------------------------------------- */
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Encabezado */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-brand font-normal text-dark mb-1">
-          Bienvenida Patricia
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Bonjour {salonConfig.admin.name}
         </h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Aquí tienes un resumen de tu actividad
+        <p className="text-gray-600">
+          Voici un aperçu de l’activité de votre salon aujourd’hui.
         </p>
       </div>
 
-      {/* Estadísticas principales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
-        {/* Tarjeta 1 : Citas pendientes */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-yellow-500 touch-manipulation">
-          <h3 className="text-xs sm:text-sm font-medium text-gray-600 mb-2">
-            Pendientes
-          </h3>
-          <p className="text-2xl sm:text-3xl font-bold text-dark">
-            {data?.statistiques.rendezvousEnAttente || 0}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Por revisar
-          </p>
-        </div>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <KPICard
+          title="Demandes en attente"
+          value={stats.pendingCount}
+          subtitle={stats.pendingCount > 0 ? 'à confirmer' : 'Aucune'}
+          icon={FaClock}
+          variant={stats.pendingCount > 0 ? 'warning' : 'default'}
+        />
 
-        {/* Tarjeta 2 : Citas próximas */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-green-500 touch-manipulation">
-          <h3 className="text-xs sm:text-sm font-medium text-gray-600 mb-2">
-            Próximas
-          </h3>
-          <p className="text-2xl sm:text-3xl font-bold text-dark">
-            {data?.statistiques.rendezvousAVenir || 0}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Confirmadas
-          </p>
-        </div>
+        <KPICard
+          title="Rendez-vous à venir"
+          value={stats.upcomingCount}
+          subtitle={stats.upcomingCount > 0 ? 'confirmés' : 'Aucun'}
+          icon={FaCalendarCheck}
+          variant="success"
+        />
 
-        {/* Tarjeta 3 : Disponibilidades */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-blue-500 touch-manipulation">
-          <h3 className="text-xs sm:text-sm font-medium text-gray-600 mb-2">
-            Horarios
-          </h3>
-          <p className="text-2xl sm:text-3xl font-bold text-dark">
-            {data?.statistiques.disponibilitesLibresSemaine || 0}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Esta semana
-          </p>
-        </div>
+        <KPICard
+          title="Aujourd’hui"
+          value={stats.todayCount}
+          subtitle="rendez-vous"
+          icon={FaCalendarDay}
+          variant="primary"
+        />
 
-        {/* Tarjeta 4 : Citas este mes */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-purple-500 touch-manipulation">
-          <h3 className="text-xs sm:text-sm font-medium text-gray-600 mb-2">
-            Este mes
-          </h3>
-          <p className="text-2xl sm:text-3xl font-bold text-dark">
-            {data?.statistiques.rendezvousCeMois || 0}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Total de citas
-          </p>
-        </div>
+        <KPICard
+          title="Cette semaine"
+          value={stats.weekCount}
+          subtitle="rendez-vous"
+          icon={FaCalendarAlt}
+        />
       </div>
 
-      {/* Próxima cita */}
-      {data?.prochainRendezvous && (
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 mb-6 border border-primary/20">
-          <h3 className="text-base sm:text-lg font-semibold text-dark mb-3">
-            Próxima cita
-          </h3>
-          <div className="space-y-2 mb-4">
-            <p className="text-base sm:text-lg font-medium text-dark">
-              {data.prochainRendezvous.nom}
-            </p>
-            <p className="text-sm text-gray-700">
-              {data.prochainRendezvous.service}
-            </p>
-            <p className="text-sm text-gray-600 capitalize">
-              {formaterDate(data.prochainRendezvous.date)} a las{' '}
-              {data.prochainRendezvous.heure.substring(0, 5)}
-            </p>
-          </div>
-          <Link
+      {/* Dernière demande */}
+      <div className="mb-8">
+        <RecentRequestsCard
+          request={stats.latestRequest}
+          onActionComplete={loadDashboard}
+        />
+      </div>
+
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <NextAppointmentCard appointment={stats.nextAppointment} />
+        </div>
+
+        <div className="space-y-4">
+          <QuickActionCard
+            title="Disponibilités"
+            description="Gérer vos horaires d’ouverture"
+            icon={FaClock}
+            href="/admin/disponibilites"
+            variant="primary"
+          />
+
+          <QuickActionCard
+            title="Tous les rendez-vous"
+            description="Voir l’agenda complet"
+            icon={FaCalendarAlt}
             href="/admin/rendezvous"
-            className="inline-block w-full sm:w-auto text-center px-6 py-3 bg-primary text-white rounded-lg hover:bg-[#a68b36] transition-colors text-sm font-medium touch-manipulation"
-          >
-            Ver detalles
-          </Link>
+          />
         </div>
-      )}
-
-      {/* Acciones rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
-        {/* Card Disponibilidades */}
-        <Link
-          href="/admin/disponibilites"
-          className="bg-white rounded-lg sm:rounded-xl shadow-md p-6 sm:p-8 hover:shadow-lg transition-all group touch-manipulation active:scale-95"
-        >
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-full flex items-center justify-center text-2xl group-hover:bg-blue-200 transition-colors">
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base sm:text-xl font-semibold text-dark">
-                Disponibilidades
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
-                Gestionar mis horarios
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center text-primary font-medium text-sm sm:text-base group-hover:translate-x-2 transition-transform">
-            <span>Acceder</span>
-            <svg
-              className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
-        </Link>
-
-        {/* Card Citas */}
-        <Link
-          href="/admin/rendezvous"
-          className="bg-white rounded-lg sm:rounded-xl shadow-md p-6 sm:p-8 hover:shadow-lg transition-all group touch-manipulation active:scale-95"
-        >
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 rounded-full flex items-center justify-center text-2xl group-hover:bg-green-200 transition-colors">
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base sm:text-xl font-semibold text-dark">
-                Citas
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
-                Gestionar solicitudes
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center text-primary font-medium text-sm sm:text-base group-hover:translate-x-2 transition-transform">
-            <span>Acceder</span>
-            <svg
-              className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
-        </Link>
       </div>
 
-      {/* Mensaje de ayuda */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
-        <h4 className="font-semibold text-dark mb-2 text-sm sm:text-base">
-          ¿Necesitas ayuda?
-        </h4>
-        <p className="text-xs sm:text-sm text-gray-700">
-          Consulta la guía de uso o contacta con el soporte en caso de dificultad.
+      {/* Help */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+        <div className="flex items-center justify-center gap-2 text-gray-600 mb-2">
+          <FaQuestionCircle />
+          <h3 className="font-medium">Besoin d’aide ?</h3>
+        </div>
+        <p className="text-sm text-gray-500">
+          Consultez le guide d’utilisation ou contactez le support technique.
         </p>
       </div>
     </div>
