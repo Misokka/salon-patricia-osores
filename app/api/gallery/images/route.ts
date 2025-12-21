@@ -29,7 +29,6 @@ export async function GET() {
       .limit(6)
 
     if (error) {
-      console.error('Erreur Supabase GET gallery:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur récupération galerie' },
         { status: 500 }
@@ -41,7 +40,6 @@ export async function GET() {
       data: data ?? [],
     })
   } catch (error) {
-    console.error('Erreur API GET gallery:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur' },
       { status: 500 }
@@ -124,7 +122,6 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase POST gallery:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur création image' },
         { status: 500 }
@@ -137,7 +134,6 @@ export async function POST(req: Request) {
       data,
     })
   } catch (error) {
-    console.error('Erreur API POST gallery:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur' },
       { status: 500 }

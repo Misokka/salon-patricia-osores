@@ -71,7 +71,6 @@ export async function GET() {
 
     if (rdvError && rdvError.code !== 'PGRST116') {
       // PGRST116 = no rows returned, c'est ok
-      console.error('Erreur lors de la récupération du prochain RDV:', rdvError)
     }
 
     return NextResponse.json({
@@ -87,7 +86,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Erreur API dashboard:', error)
     return NextResponse.json(
       {
         success: false,

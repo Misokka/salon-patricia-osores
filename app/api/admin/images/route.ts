@@ -74,7 +74,6 @@ export async function POST(request: Request) {
       })
 
     if (uploadError) {
-      console.error('Erreur upload storage:', uploadError)
       return NextResponse.json(
         { success: false, error: 'Erreur upload fichier' },
         { status: 500 }
@@ -111,7 +110,6 @@ export async function POST(request: Request) {
 
     if (insertError) {
       await supabase.storage.from(BUCKET).remove([storagePath])
-      console.error('Erreur insert image:', insertError)
 
       return NextResponse.json(
         { success: false, error: 'Erreur création image' },
@@ -125,7 +123,6 @@ export async function POST(request: Request) {
       data: image,
     })
   } catch (error) {
-    console.error('Erreur API POST images:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -199,7 +196,6 @@ export async function DELETE(request: Request) {
       message: 'Image supprimée',
     })
   } catch (error) {
-    console.error('Erreur API DELETE images:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

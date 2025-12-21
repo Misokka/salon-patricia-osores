@@ -25,7 +25,6 @@ export async function GET() {
       .order('position', { ascending: true })
 
     if (error) {
-      console.error('Erreur Supabase GET services:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des services' },
         { status: 500 }
@@ -37,7 +36,6 @@ export async function GET() {
       data: data || [],
     })
   } catch (error) {
-    console.error('Erreur API GET services:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -106,8 +104,6 @@ console.log('📥 BODY REÇU:', body)
       .single()
 
     if (error) {
-      console.error('❌ SUPABASE ERROR:', error)
-      console.error('Erreur Supabase POST service:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la création du service' },
         { status: 500 }
@@ -120,7 +116,6 @@ console.log('📥 BODY REÇU:', body)
       data,
     })
   } catch (error) {
-    console.error('Erreur API POST service:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -212,7 +207,6 @@ export async function PATCH(request: Request) {
       .select()
 
     if (error) {
-      console.error('Erreur Supabase PATCH service:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la mise à jour' },
         { status: 500 }
@@ -239,7 +233,6 @@ export async function PATCH(request: Request) {
       data: data[0],
     })
   } catch (error) {
-    console.error('Erreur API PATCH service:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -276,7 +269,6 @@ export async function DELETE(request: Request) {
       .eq('salon_id', salonId)
 
     if (error) {
-      console.error('Erreur Supabase DELETE service:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la suppression' },
         { status: 500 }
@@ -288,7 +280,6 @@ export async function DELETE(request: Request) {
       message: 'Service supprimé',
     })
   } catch (error) {
-    console.error('Erreur API DELETE service:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

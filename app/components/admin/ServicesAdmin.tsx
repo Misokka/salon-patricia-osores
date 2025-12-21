@@ -78,8 +78,8 @@ export default function ServicesAdmin() {
     try {
       setLoading(true)
       const [categoriesRes, servicesRes] = await Promise.all([
-        axios.get(`/admin/service-categories`),
-        axios.get(`/admin/services`),
+        axios.get(`/api/admin/service-categories`),
+        axios.get(`/api/admin/services`),
       ])
 
       if (categoriesRes.data.success) setCategories(categoriesRes.data.data)
@@ -133,7 +133,7 @@ export default function ServicesAdmin() {
     }
 
     try {
-      const res = await axios.patch(`/admin/services`, {
+      const res = await axios.patch(`/api/admin/services`, {
         id: service.id,
         isFeatured: value,
       })
@@ -154,7 +154,7 @@ export default function ServicesAdmin() {
   const handleCreateCategory = async (data: CategoryFormData) => {
     try {
       setIsSubmitting(true)
-      const res = await axios.post(`/admin/service-categories`, data)
+      const res = await axios.post(`/api/admin/service-categories`, data)
 
       if (res.data.success) {
         setCategories(prev => [...prev, res.data.data])
@@ -173,7 +173,7 @@ export default function ServicesAdmin() {
   const handleUpdateCategory = async (id: string, data: CategoryFormData) => {
     try {
       setIsSubmitting(true)
-      const res = await axios.patch(`admin/service-categories`, {
+      const res = await axios.patch(`/api/admin/service-categories`, {
         id,
         ...data,
       })
@@ -195,7 +195,7 @@ export default function ServicesAdmin() {
   const confirmDeleteCategory = async (id: string) => {
     try {
       setDeletingId(id)
-      const res = await axios.delete(`/admin/service-categories?id=${id}`)
+      const res = await axios.delete(`/api/admin/service-categories?id=${id}`)
 
       if (res.data.success) {
         setCategories(prev => prev.filter(c => c.id !== id))
@@ -224,7 +224,7 @@ export default function ServicesAdmin() {
 
     try {
       setIsSubmitting(true)
-      const res = await axios.post(`/admin/services`, data)
+      const res = await axios.post(`/api/admin/services`, data)
 
       if (res.data.success) {
         setServices(prev => [...prev, res.data.data])
@@ -248,7 +248,7 @@ export default function ServicesAdmin() {
 
     try {
       setIsSubmitting(true)
-      const res = await axios.patch(`/admin/services`, {
+      const res = await axios.patch(`/api/admin/services`, {
         id,
         ...data,
       })
@@ -280,7 +280,7 @@ export default function ServicesAdmin() {
     }
 
     try {
-      const res = await axios.post(`/admin/services`, data)
+      const res = await axios.post(`/api/admin/services`, data)
       if (res.data.success) {
         setServices(prev => [...prev, res.data.data])
         showMessage('success', 'Service dupliqué')
@@ -295,7 +295,7 @@ export default function ServicesAdmin() {
   const confirmDeleteService = async (id: string) => {
     try {
       setDeletingId(id)
-      const res = await axios.delete(`/admin/services?id=${id}`)
+      const res = await axios.delete(`/api/admin/services?id=${id}`)
 
       if (res.data.success) {
         setServices(prev => prev.filter(s => s.id !== id))

@@ -60,8 +60,6 @@ export async function POST(request: Request) {
     )
 
     if (!validation.valid) {
-      console.error('❌ Validation échouée (client):', validation.error)
-      console.error('📊 Détails:', validation.details)
       return NextResponse.json(
         { 
           success: false, 
@@ -72,7 +70,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('✅ Validation réussie (client):', validation.details)
 
     // Vérifier atomiquement que TOUS les créneaux requis sont disponibles
     const { data: slotsToCheck, error: checkError } = await supabaseAdmin
@@ -81,7 +78,6 @@ export async function POST(request: Request) {
       .in('id', required_slot_ids)
 
     if (checkError) {
-      console.error('Erreur vérification créneaux:', checkError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la vérification des créneaux' },
         { status: 500 }
@@ -132,7 +128,6 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
-      console.error('Erreur insertion rendez-vous:', insertError)
       return NextResponse.json(
         { success: false, error: "Erreur lors de l'enregistrement du rendez-vous" },
         { status: 500 }
@@ -148,7 +143,6 @@ export async function POST(request: Request) {
       .in('id', required_slot_ids)
 
     if (updateError) {
-      console.error('Erreur mise à jour disponibilités:', updateError)
       // Rollback : supprimer le rendez-vous créé
       await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
       return NextResponse.json(
@@ -169,7 +163,6 @@ export async function POST(request: Request) {
       .insert(slotsLinks)
 
     if (linksError) {
-      console.error('Erreur création liens slots:', linksError)
       // Rollback : supprimer le rendez-vous et libérer les créneaux
       await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
       await supabaseAdmin
@@ -182,7 +175,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log(`✅ Rendez-vous créé avec succès : ${appointmentId} (${required_slot_ids.length} créneaux réservés)`)
 
     // Résoudre le nom du service pour les emails
     const { data: serviceData, error: serviceError } = await supabaseAdmin
@@ -198,7 +190,6 @@ export async function POST(request: Request) {
       await sendEmailToPatricia({ nom, telephone, email, service: serviceName, date, heure, message })
       await sendConfirmationToClient({ nom, telephone, email, service: serviceName, date, heure, message })
     } catch (emailError) {
-      console.error("Erreur lors de l'envoi des emails :", emailError)
       // On ne retourne pas d'erreur car l'enregistrement a réussi
       return NextResponse.json({
         success: true,
@@ -214,7 +205,6 @@ export async function POST(request: Request) {
       slots_reserved: required_slot_ids.length,
     })
   } catch (error) {
-    console.error('Erreur API :', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

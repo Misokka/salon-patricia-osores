@@ -21,7 +21,6 @@ export async function GET() {
       .order('start_time', { ascending: true })
 
     if (error) {
-      console.error('Erreur Supabase GET time slots:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des créneaux' },
         { status: 500 }
@@ -33,7 +32,6 @@ export async function GET() {
       data: data || []
     })
   } catch (error) {
-    console.error('Erreur API GET time slots:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -74,7 +72,6 @@ export async function POST(request: Request) {
       .select()
 
     if (error) {
-      console.error('Erreur Supabase POST time slots:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la création des créneaux' },
         { status: 500 }
@@ -86,7 +83,6 @@ export async function POST(request: Request) {
       data: data || []
     })
   } catch (error) {
-    console.error('Erreur API POST time slots:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -116,7 +112,6 @@ export async function DELETE(request: Request) {
         .eq('salon_id', salonId)
 
       if (error) {
-        console.error('Erreur Supabase DELETE time slots by date:', error)
         return NextResponse.json(
           { success: false, error: 'Erreur lors de la suppression' },
           { status: 500 }
@@ -131,7 +126,6 @@ export async function DELETE(request: Request) {
       { status: 400 }
     )
   } catch (error) {
-    console.error('Erreur API DELETE time slots:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

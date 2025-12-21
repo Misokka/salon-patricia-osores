@@ -125,7 +125,6 @@ export async function POST(request: Request) {
       message: `${uniqueSlots.length} slots generated`,
     })
   } catch (error) {
-    console.error('Generate slots error:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

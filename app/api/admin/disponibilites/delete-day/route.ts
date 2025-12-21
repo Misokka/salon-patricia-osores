@@ -65,7 +65,6 @@ export async function DELETE(request: Request) {
       keptSlots: reservedSlots, // Retourner les créneaux conservés pour update frontend
     })
   } catch (error) {
-    console.error('Erreur DELETE créneaux jour:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

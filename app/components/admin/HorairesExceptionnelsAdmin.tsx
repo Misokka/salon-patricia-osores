@@ -61,7 +61,7 @@ export default function HorairesExceptionnelsAdmin() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const res = await axios.get(`/admin/horaires-exceptionnels`)
+      const res = await axios.get(`/api/admin/horaires-exceptionnels`)
       if (res.data.success) {
         setExceptionalHours(res.data.data)
       }
@@ -91,7 +91,7 @@ export default function HorairesExceptionnelsAdmin() {
     try {
       setIsSubmitting(true)
 
-      const res = await axios.post(`/admin/horaires-exceptionnels`, {
+      const res = await axios.post(`/api/admin/horaires-exceptionnels`, {
         start_date: data.start_date,
         end_date: data.end_date,
         type: data.type,
@@ -147,7 +147,7 @@ export default function HorairesExceptionnelsAdmin() {
     try {
       setDeletingId(id)
       const res = await axios.delete(
-        `/admin/horaires-exceptionnels?id=${id}`
+        `/api/admin/horaires-exceptionnels?id=${id}`
       )
 
       if (res.data.success) {

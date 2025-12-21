@@ -15,7 +15,7 @@ export default function About() {
     async function fetchAboutImage() {
       try {
         const res = await axios.get(
-          `/about/image`
+          `/api/about/image`
         );
 
         if (res.data.success && res.data.data?.imageUrl) {

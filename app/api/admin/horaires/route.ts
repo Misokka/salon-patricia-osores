@@ -48,7 +48,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('GET horaires admin error:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -123,7 +122,6 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   } catch (error) {
-    console.error('POST horaires admin error:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -151,7 +149,6 @@ export async function PATCH(request: Request) {
     if (error) throw error
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('PATCH horaires admin error:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -183,7 +180,6 @@ export async function DELETE(request: Request) {
     if (error) throw error
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('DELETE horaires admin error:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

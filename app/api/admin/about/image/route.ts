@@ -22,7 +22,6 @@ export async function GET() {
 
     // PGRST116 = aucune ligne (normal si pas d’image)
     if (error && error.code !== 'PGRST116') {
-      console.error('Erreur Supabase GET about image:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération de l’image' },
         { status: 500 }
@@ -36,7 +35,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Erreur API GET about image:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -68,7 +66,6 @@ export async function PATCH(request: Request) {
         .is('deleted_at', null)
 
       if (error) {
-        console.error('Erreur Supabase DELETE about image:', error)
         return NextResponse.json(
           { success: false, error: 'Erreur lors de la suppression' },
           { status: 500 }
@@ -108,7 +105,6 @@ export async function PATCH(request: Request) {
         .single()
 
       if (error) {
-        console.error('Erreur Supabase UPDATE about image:', error)
         return NextResponse.json(
           { success: false, error: 'Erreur lors de la mise à jour' },
           { status: 500 }
@@ -133,7 +129,6 @@ export async function PATCH(request: Request) {
         .single()
 
       if (error) {
-        console.error('Erreur Supabase INSERT about image:', error)
         return NextResponse.json(
           { success: false, error: 'Erreur lors de la création' },
           { status: 500 }
@@ -149,7 +144,6 @@ export async function PATCH(request: Request) {
       data: { imageUrl: result.image_url },
     })
   } catch (error) {
-    console.error('Erreur API PATCH about image:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

@@ -34,7 +34,6 @@ export async function GET(request: Request) {
       .eq('is_available', true)
 
     if (dispoError) {
-      console.error('Erreur récupération disponibilités:', dispoError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des disponibilités' },
         { status: 500 }
@@ -58,7 +57,6 @@ export async function GET(request: Request) {
       .in('status', ['accepted', 'pending'])
 
     if (rdvError) {
-      console.error('Erreur récupération RDV:', rdvError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des rendez-vous' },
         { status: 500 }
@@ -82,7 +80,6 @@ export async function GET(request: Request) {
       availableCount: availableSlots.length,
     })
   } catch (error) {
-    console.error('Erreur récupération créneaux disponibles:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur' },
       { status: 500 }

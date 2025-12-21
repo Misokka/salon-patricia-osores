@@ -213,7 +213,6 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
-    console.error('Erreur API disponibilites/available:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

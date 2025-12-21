@@ -62,7 +62,6 @@ export async function GET(request: Request) {
     const { data: appointments, error } = await query
 
     if (error) {
-      console.error('Erreur Supabase GET appointments:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des rendez-vous' },
         { status: 500 }
@@ -125,7 +124,6 @@ export async function GET(request: Request) {
       }
     })
   } catch (error) {
-    console.error('Erreur API GET appointments:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

@@ -12,7 +12,6 @@ export async function POST(request: Request) {
     const expectedToken = `Bearer ${process.env.INTERNAL_API_SECRET}`
 
     if (!authHeader || authHeader !== expectedToken) {
-      console.error('❌ Tentative d\'accès non autorisée à /api/send-review-request')
       return NextResponse.json(
         { success: false, error: 'Non autorisé' },
         { status: 401 }
@@ -47,14 +46,12 @@ export async function POST(request: Request) {
       date: dateFormatted,
     })
 
-    console.log(`✅ Email d'avis envoyé à ${nom} (${email})`)
 
     return NextResponse.json({
       success: true,
       message: 'Email de demande d\'avis envoyé avec succès',
     })
   } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi de l\'email d\'avis:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur lors de l\'envoi de l\'email' },
       { status: 500 }

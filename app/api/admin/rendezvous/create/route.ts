@@ -63,8 +63,6 @@ export async function POST(request: Request) {
     )
 
     if (!validation.valid) {
-      console.error('❌ Validation échouée:', validation.error)
-      console.error('📊 Détails:', validation.details)
       return NextResponse.json(
         { 
           success: false, 
@@ -75,7 +73,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('✅ Validation réussie:', validation.details)
 
     // Vérifier atomiquement que TOUS les créneaux requis sont disponibles
     const { data: slotsToCheck, error: checkError } = await supabase
@@ -84,7 +81,6 @@ export async function POST(request: Request) {
       .in('id', required_slot_ids)
 
     if (checkError) {
-      console.error('Erreur vérification créneaux:', checkError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la vérification des créneaux' },
         { status: 500 }
@@ -135,7 +131,6 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
-      console.error('Erreur insertion rendez-vous:', insertError)
       return NextResponse.json(
         { success: false, error: "Erreur lors de l'enregistrement du rendez-vous" },
         { status: 500 }
@@ -151,7 +146,6 @@ export async function POST(request: Request) {
       .in('id', required_slot_ids)
 
     if (updateError) {
-      console.error('Erreur mise à jour disponibilités:', updateError)
       // Rollback : supprimer le rendez-vous créé
       await supabase.from('appointments').delete().eq('id', appointmentId)
       return NextResponse.json(
@@ -172,7 +166,6 @@ export async function POST(request: Request) {
       .insert(slotsLinks)
 
     if (linksError) {
-      console.error('Erreur création liens slots:', linksError)
       // Rollback : supprimer le rendez-vous et libérer les créneaux
       await supabase.from('appointments').delete().eq('id', appointmentId)
       await supabase
@@ -185,7 +178,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log(`✅ RDV créé par admin : ${appointmentId} (${required_slot_ids.length} créneaux réservés)`)
 
     // Note interne sauvegardée (si besoin d'une table dédiée, à implémenter)
     // Pour l'instant, on pourrait l'ajouter dans une colonne "notes" de appointments
@@ -197,7 +189,6 @@ export async function POST(request: Request) {
       slots_reserved: required_slot_ids.length,
     })
   } catch (error) {
-    console.error('Erreur API admin create appointment:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

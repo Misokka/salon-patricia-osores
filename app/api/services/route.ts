@@ -41,7 +41,6 @@ export async function GET() {
       .order('position', { ascending: true })
 
     if (error) {
-      console.error('Erreur GET services:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur récupération services' },
         { status: 500 }
@@ -87,7 +86,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Erreur API services:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

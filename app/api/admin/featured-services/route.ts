@@ -45,7 +45,6 @@ export async function GET() {
 
 
     if (error) {
-      console.error('Erreur Supabase GET featured services:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des services' },
         { status: 500 }
@@ -74,7 +73,6 @@ export async function GET() {
       data: normalized,
     })
   } catch (error) {
-    console.error('Erreur API GET featured services:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

@@ -38,7 +38,7 @@ export default function Navbar() {
   useEffect(() => {
     const checkGallery = async () => {
       try {
-        const res = await fetch(`/gallery/images`);
+        const res = await fetch(`/api/gallery/images`);
         const data = await res.json();
         if (data.success) setHasGalleryImages((data.data || []).length > 0);
       } catch {

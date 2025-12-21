@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
         .eq('id', id)
 
       if (updateError) {
-        console.error('Error updating appointment:', updateError)
         return NextResponse.json(
           { success: false, error: 'Erreur lors de la mise à jour' },
           { status: 500 }
@@ -93,7 +92,6 @@ export async function POST(req: NextRequest) {
           service: serviceName,
         })
       } catch (emailError) {
-        console.error('Error sending confirmation email:', emailError)
         // Ne pas bloquer la réponse si l'email échoue
       }
 
@@ -113,7 +111,6 @@ export async function POST(req: NextRequest) {
         .eq('id', id)
 
       if (cancelError) {
-        console.error('Error cancelling appointment:', cancelError)
         return NextResponse.json(
           { success: false, error: 'Erreur lors de l\'annulation' },
           { status: 500 }
@@ -139,7 +136,6 @@ export async function POST(req: NextRequest) {
           service: serviceName,
         })
       } catch (emailError) {
-        console.error('Error sending cancellation email:', emailError)
       }
 
       return NextResponse.json({
@@ -148,7 +144,6 @@ export async function POST(req: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('Error validating reschedule:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur' },
       { status: 500 }

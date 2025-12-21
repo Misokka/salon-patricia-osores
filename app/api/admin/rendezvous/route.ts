@@ -51,7 +51,6 @@ export async function GET() {
 
 
     if (error) {
-      console.error('Erreur Supabase GET :', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des rendez-vous' },
         { status: 500 }
@@ -69,7 +68,6 @@ export async function GET() {
       data: transformedData,
     })
   } catch (error) {
-    console.error('Erreur API GET :', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -129,7 +127,6 @@ export async function PATCH(request: Request) {
       .single()
 
     if (fetchError || !rdvData) {
-      console.error('Erreur lors de la récupération du rendez-vous :', fetchError)
       return NextResponse.json(
         { success: false, error: 'Rendez-vous introuvable' },
         { status: 404 }
@@ -145,7 +142,6 @@ export async function PATCH(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase PATCH :', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la mise à jour du statut' },
         { status: 500 }
@@ -166,7 +162,6 @@ export async function PATCH(request: Request) {
           .update({ is_available: true })
           .in('id', slotIds)
         
-        console.log(`✅ ${slotIds.length} créneaux libérés pour le rendez-vous annulé ${id}`)
       }
     }
 
@@ -202,9 +197,7 @@ export async function PATCH(request: Request) {
         //     email: rdvData.customer_email,
         //     telephone: rdvData.customer_phone,
         //   })
-        //   console.log('✅ Événement ajouté au Google Calendar de Patricia')
         // } catch (calendarError) {
-        //   console.error('⚠️ Erreur Google Calendar (non-bloquant):', calendarError)
         //   // On continue même si Calendar échoue
         // }
       } else if (newStatus === 'refused' && rdvData.customer_email) {
@@ -222,7 +215,6 @@ export async function PATCH(request: Request) {
         })
       }
     } catch (emailError) {
-      console.error('Erreur lors de l\'envoi de l\'email :', emailError)
       // On continue même si l'email échoue
       return NextResponse.json({
         success: true,
@@ -247,7 +239,6 @@ export async function PATCH(request: Request) {
       data,
     })
   } catch (error) {
-    console.error('Erreur API PATCH :', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

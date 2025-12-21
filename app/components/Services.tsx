@@ -59,7 +59,7 @@ export default function Services() {
     const fetchServices = async () => {
       try {
         const res = await axios.get<{ success: boolean; data: ApiResponse }>(
-          `/services`
+          `/api/services`
         )
 
         if (!res.data.success) return

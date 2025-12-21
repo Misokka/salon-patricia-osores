@@ -78,7 +78,6 @@ export async function POST(request: Request) {
       })
 
     if (uploadError) {
-      console.error('Erreur upload Supabase Storage:', uploadError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de l\'upload de l\'image' },
         { status: 500 }
@@ -99,7 +98,6 @@ export async function POST(request: Request) {
         .eq('id', serviceId)
 
       if (updateError) {
-        console.error('Erreur mise à jour service:', updateError)
         // On ne rollback pas l'upload, juste un warning
       }
     }
@@ -114,7 +112,6 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur API upload image:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

@@ -21,7 +21,6 @@ export async function GET() {
 
     // PGRST116 = aucune ligne (normal si pas d'image)
     if (error && error.code !== 'PGRST116') {
-      console.error('Erreur Supabase GET about image:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération de l\'image' },
         { status: 500 }
@@ -36,7 +35,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Erreur API GET about image:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

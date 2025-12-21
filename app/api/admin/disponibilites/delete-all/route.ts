@@ -22,7 +22,6 @@ export async function DELETE(request: Request) {
       .eq('is_available', true)
 
     if (fetchError) {
-      console.error('Erreur fetch créneaux:', fetchError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des créneaux' },
         { status: 500 }
@@ -44,7 +43,6 @@ export async function DELETE(request: Request) {
       .in('status', ['accepted', 'pending'])
 
     if (rdvError) {
-      console.error('Erreur fetch RDV:', rdvError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la vérification des rendez-vous' },
         { status: 500 }
@@ -79,7 +77,6 @@ export async function DELETE(request: Request) {
       .in('id', slotIds)
 
     if (deleteError) {
-      console.error('Erreur suppression créneaux:', deleteError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la suppression' },
         { status: 500 }
@@ -93,7 +90,6 @@ export async function DELETE(request: Request) {
       keptCount: bookedSet.size,
     })
   } catch (error) {
-    console.error('Erreur suppression globale:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur' },
       { status: 500 }

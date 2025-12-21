@@ -52,7 +52,6 @@ export async function PATCH(request: Request) {
       .maybeSingle()
 
     if (checkError) {
-      console.error('Erreur vérification disponibilité:', checkError)
     }
 
     if (existingRdv) {
@@ -77,7 +76,6 @@ export async function PATCH(request: Request) {
       .single()
 
     if (updateError) {
-      console.error('Erreur update rendez-vous:', updateError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la mise à jour' },
         { status: 500 }
@@ -113,9 +111,7 @@ export async function PATCH(request: Request) {
           newTime: newTime,
           rdvId: id,
         })
-        console.log(`✅ Email de modification envoyé à ${rdv.customer_name} (${rdv.customer_email})`)
       } catch (emailError) {
-        console.error('Erreur envoi email:', emailError)
         // Ne pas bloquer la réponse si l'email échoue
       }
     }
@@ -126,7 +122,6 @@ export async function PATCH(request: Request) {
       data: updated,
     })
   } catch (error) {
-    console.error('Erreur déplacement rendez-vous:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur' },
       { status: 500 }

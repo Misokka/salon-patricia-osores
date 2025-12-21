@@ -36,7 +36,6 @@ export async function DELETE(request: Request) {
       .remove([path])
 
     if (deleteError) {
-      console.error('Erreur suppression Supabase Storage:', deleteError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la suppression de l\'image' },
         { status: 500 }
@@ -51,7 +50,6 @@ export async function DELETE(request: Request) {
         .eq('id', serviceId)
 
       if (updateError) {
-        console.error('Erreur mise à jour service:', updateError)
         // On ne rollback pas la suppression, juste un warning
       }
     }
@@ -62,7 +60,6 @@ export async function DELETE(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur API delete image:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

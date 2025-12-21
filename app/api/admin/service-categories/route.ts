@@ -18,7 +18,6 @@ export async function GET() {
       .order('position', { ascending: true })
 
     if (error) {
-      console.error('Erreur Supabase GET categories:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des catégories' },
         { status: 500 }
@@ -30,7 +29,6 @@ export async function GET() {
       data: data || [],
     })
   } catch (error) {
-    console.error('Erreur API GET categories:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -65,7 +63,6 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase POST category:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la création de la catégorie' },
         { status: 500 }
@@ -78,7 +75,6 @@ export async function POST(request: Request) {
       data,
     })
   } catch (error) {
-    console.error('Erreur API POST category:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -118,7 +114,6 @@ export async function PATCH(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase PATCH category:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la mise à jour' },
         { status: 500 }
@@ -131,7 +126,6 @@ export async function PATCH(request: Request) {
       data,
     })
   } catch (error) {
-    console.error('Erreur API PATCH category:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -165,7 +159,6 @@ export async function DELETE(request: Request) {
       .eq('id', id)
 
     if (error) {
-      console.error('Erreur Supabase DELETE category:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la suppression' },
         { status: 500 }
@@ -177,7 +170,6 @@ export async function DELETE(request: Request) {
       message: 'Catégorie supprimée',
     })
   } catch (error) {
-    console.error('Erreur API DELETE category:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

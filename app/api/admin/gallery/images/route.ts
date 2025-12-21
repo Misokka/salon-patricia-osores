@@ -44,7 +44,6 @@ export async function GET() {
       .limit(MAX_GALLERY_IMAGES)
 
     if (error) {
-      console.error('Erreur Supabase GET gallery:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la récupération des images' },
         { status: 500 }
@@ -57,7 +56,6 @@ export async function GET() {
       count: data?.length || 0,
     })
   } catch (error) {
-    console.error('Erreur API GET gallery:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -98,7 +96,6 @@ export async function POST(request: Request) {
       .is('deleted_at', null)
 
     if (countError) {
-      console.error('Erreur Supabase COUNT gallery:', countError)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la vérification du quota' },
         { status: 500 }
@@ -144,7 +141,6 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase POST gallery:', error)
       return NextResponse.json(
         { success: false, error: "Erreur lors de l'ajout de l'image" },
         { status: 500 }
@@ -157,7 +153,6 @@ export async function POST(request: Request) {
       data,
     })
   } catch (error) {
-    console.error('Erreur API POST gallery:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -243,7 +238,6 @@ export async function PATCH(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase PATCH gallery:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la mise à jour' },
         { status: 500 }
@@ -256,7 +250,6 @@ export async function PATCH(request: Request) {
       data,
     })
   } catch (error) {
-    console.error('Erreur API PATCH gallery:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }
@@ -308,7 +301,6 @@ export async function DELETE(request: Request) {
       .eq('id', id)
 
     if (error) {
-      console.error('Erreur Supabase DELETE gallery:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la suppression' },
         { status: 500 }
@@ -320,7 +312,6 @@ export async function DELETE(request: Request) {
       message: 'Image supprimée de la galerie',
     })
   } catch (error) {
-    console.error('Erreur API DELETE gallery:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

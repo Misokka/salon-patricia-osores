@@ -22,7 +22,6 @@ export async function DELETE(
       .eq('salon_id', salonId)
 
     if (error) {
-      console.error('Erreur Supabase DELETE time slot:', error)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la suppression' },
         { status: 500 }
@@ -31,7 +30,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Erreur API DELETE time slot:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

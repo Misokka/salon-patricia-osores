@@ -38,7 +38,6 @@ export async function GET(request: Request) {
     const { data, error } = await query
 
     if (error) {
-      console.error('Erreur Supabase GET:', error)
       return NextResponse.json(
         { error: 'Erreur lors de la récupération des disponibilités' },
         { status: 500 }
@@ -109,7 +108,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(transformedData)
   } catch (error) {
-    console.error('Erreur serveur GET:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -154,7 +152,6 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase POST:', error)
       return NextResponse.json(
         { error: 'Erreur lors de l\'ajout de la disponibilité' },
         { status: 500 }
@@ -163,7 +160,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data, { status: 201 })
   } catch (error) {
-    console.error('Erreur serveur POST:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -190,7 +186,6 @@ export async function DELETE(request: Request) {
       .eq('id', id)
 
     if (error) {
-      console.error('Erreur Supabase DELETE:', error)
       return NextResponse.json(
         { error: 'Erreur lors de la suppression de la disponibilité' },
         { status: 500 }
@@ -199,7 +194,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: 'Disponibilité supprimée avec succès' })
   } catch (error) {
-    console.error('Erreur serveur DELETE:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -228,7 +222,6 @@ export async function PATCH(request: Request) {
       .single()
 
     if (error) {
-      console.error('Erreur Supabase PATCH:', error)
       return NextResponse.json(
         { error: 'Erreur lors de la mise à jour de la disponibilité' },
         { status: 500 }
@@ -237,7 +230,6 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Erreur serveur PATCH:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

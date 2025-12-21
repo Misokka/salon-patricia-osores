@@ -29,7 +29,7 @@ export default function Gallery() {
   useEffect(() => {
     async function fetchGallery() {
       try {
-        const res = await axios.get(`/gallery/images`);
+        const res = await axios.get(`/api/gallery/images`);
         if (res.data.success) {
           setPhotos(res.data.data || []);
         }
