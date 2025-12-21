@@ -1,24 +1,21 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 /**
  * GET - Récupère les services featured (mis en avant)
  */
 export async function GET() {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('services')
       .select(`
         id,

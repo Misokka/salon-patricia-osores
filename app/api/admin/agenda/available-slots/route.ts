@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
@@ -28,10 +27,10 @@ export async function GET(request: Request) {
       )
     }
 
-    const supabase = supabaseAdmin
+    
 
     // 1. Récupérer les disponibilités créées pour cette date
-    const { data: dispos, error: dispoError } = await supabase
+    const { data: dispos, error: dispoError } = await supabaseAdmin
       .from('time_slots')
       .select('start_time, is_available')
       .eq('slot_date', date)
@@ -54,7 +53,7 @@ export async function GET(request: Request) {
     }
 
     // 2. Récupérer tous les RDV confirmés ou en attente pour cette date
-    const { data: bookedRdv, error: rdvError } = await supabase
+    const { data: bookedRdv, error: rdvError } = await supabaseAdmin
       .from('appointments')
       .select('start_time')
       .eq('appointment_date', date)

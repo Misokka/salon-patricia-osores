@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -15,7 +14,7 @@ import { startOfDay, endOfDay, startOfWeek, endOfWeek, format } from 'date-fns'
  * - collaboratorIds: string[] (optionnel)
  */
 export async function GET(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -46,10 +45,10 @@ export async function GET(request: Request) {
     }
 
     // Créer client Supabase
-    const supabase = supabaseAdmin
+    
 
     // Query de base - récupérer les rendez-vous
-    let query = supabase
+    let query = supabaseAdmin
       .from('appointments')
       .select('*')
       .gte('appointment_date', format(startDate, 'yyyy-MM-dd'))
@@ -78,7 +77,7 @@ export async function GET(request: Request) {
     // Récupérer les services correspondants par ID
     let servicesMap: Record<string, any> = {}
     if (serviceIds.length > 0) {
-      const { data: services, error: servicesError } = await supabase
+      const { data: services, error: servicesError } = await supabaseAdmin
         .from('services')
         .select('id, name, duration_minutes, price_value')
         .in('id', serviceIds)

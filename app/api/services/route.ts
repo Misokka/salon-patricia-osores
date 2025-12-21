@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getDefaultSalonId } from '../../../lib/salonContext'
+import { PUBLIC_SALON_ID } from '../../../lib/salonContext'
 
 function getSupabase() {
   return createClient(
@@ -15,7 +15,7 @@ const FEATURED_IMAGE_TYPE = 'service_featured'
 
 export async function GET() {
   try {
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
 
     const { data, error } = await getSupabase()
       .from('services')

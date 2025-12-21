@@ -1,19 +1,16 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '../../../../lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 export async function GET() {
   // Vérifier l'authentification admin
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const salonId = getDefaultSalonId()
     const today = new Date().toISOString().split('T')[0]
     const now = new Date()
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`

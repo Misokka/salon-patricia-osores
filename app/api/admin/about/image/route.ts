@@ -1,22 +1,20 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../../lib/salonContext'
 
 /**
  * GET — Récupère l'image "À propos"
  * Règle : images.type = 'about'
  */
 export async function GET() {
-  try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+  const { salonId, error: authError } = await verifyAdminAuth()
+  if (authError) return authError
 
-    const { data, error } = await supabase
+  try {
+    const { data, error } = await supabaseAdmin
       .from('images')
       .select('image_url')
       .eq('salon_id', salonId)
@@ -50,19 +48,18 @@ export async function GET() {
  * PATCH — Crée / met à jour / supprime l'image "À propos"
  */
 export async function PATCH(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
     const { imageUrl } = await request.json()
 
     /**
      * SUPPRESSION (soft delete)
      */
     if (!imageUrl) {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('images')
         .update({ deleted_at: new Date().toISOString() })
         .eq('salon_id', salonId)
@@ -86,7 +83,7 @@ export async function PATCH(request: Request) {
     /**
      * UPSERT
      */
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('images')
       .select('id')
       .eq('salon_id', salonId)
@@ -98,7 +95,7 @@ export async function PATCH(request: Request) {
 
     if (existing) {
       // UPDATE
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('images')
         .update({
           image_url: imageUrl,
@@ -118,7 +115,7 @@ export async function PATCH(request: Request) {
       result = data
     } else {
       // INSERT
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('images')
         .insert({
           salon_id: salonId,

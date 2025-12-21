@@ -9,10 +9,10 @@ function getSupabase() {
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 }
-import { getDefaultSalonId } from '@/lib/salonContext'
+import { PUBLIC_SALON_ID } from '@/lib/salonContext'
 
 export async function GET() {
-  const salonId = getDefaultSalonId()
+  const salonId = PUBLIC_SALON_ID
 
   const { data, error } = await getSupabase()
     .from('service_categories')

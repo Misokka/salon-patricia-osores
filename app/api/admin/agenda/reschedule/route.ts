@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
@@ -29,10 +28,10 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const supabase = supabaseAdmin
+    
 
     // Récupérer le rendez-vous actuel
-    const { data: rdv, error: fetchError } = await supabase
+    const { data: rdv, error: fetchError } = await supabaseAdmin
       .from('appointments')
       .select('*')
       .eq('id', id)
@@ -46,7 +45,7 @@ export async function PATCH(request: Request) {
     }
 
     // Vérifier que le créneau est disponible
-    const { data: existingRdv, error: checkError } = await supabase
+    const { data: existingRdv, error: checkError } = await supabaseAdmin
       .from('appointments')
       .select('id')
       .eq('appointment_date', newDate)
@@ -67,7 +66,7 @@ export async function PATCH(request: Request) {
 
     // Stocker la proposition de modification dans le RDV (nouveau champs)
     // Le RDV reste inchangé jusqu'à validation client
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabaseAdmin
       .from('appointments')
       .update({
         proposed_date: newDate,
@@ -90,7 +89,7 @@ export async function PATCH(request: Request) {
     if (rdv.customer_email) {
       try {
         // Récupérer le nom du service
-        const { data: serviceData } = await supabase
+        const { data: serviceData } = await supabaseAdmin
           .from('services')
           .select('name')
           .eq('id', rdv.service_id)

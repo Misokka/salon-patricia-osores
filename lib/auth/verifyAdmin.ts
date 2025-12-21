@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 /**
  * Vérifie si l'utilisateur est authentifié et a le rôle admin
- * Retourne l'utilisateur si valide, sinon retourne une réponse d'erreur
+ * Retourne l'utilisateur + salon_id si valide, sinon retourne une réponse d'erreur
  */
 export async function verifyAdminAuth() {
   try {
@@ -11,13 +11,11 @@ export async function verifyAdminAuth() {
     
     const { data: { user }, error } = await supabase.auth.getUser()
 
-    console.log('[verifyAdminAuth] User:', user?.id, 'Error:', error?.message);
-
     // Vérifier si l'utilisateur est connecté
     if (error || !user) {
-      console.error('[verifyAdminAuth] Non authentifié:', error);
       return {
         user: null,
+        salonId: null,
         error: NextResponse.json(
           { success: false, error: 'Non authentifié' },
           { status: 401 }
@@ -25,14 +23,12 @@ export async function verifyAdminAuth() {
       }
     }
 
-    // Vérifier si l'utilisateur a le rôle admin (dans app_metadata, pas user_metadata)
+    // Vérifier si l'utilisateur a le rôle admin
     const userRole = user.app_metadata?.role
-    console.log('[verifyAdminAuth] User role:', userRole);
-    
     if (userRole !== 'admin') {
-      console.error('[verifyAdminAuth] Rôle invalide:', userRole);
       return {
         user: null,
+        salonId: null,
         error: NextResponse.json(
           { success: false, error: 'Accès non autorisé' },
           { status: 403 }
@@ -40,13 +36,26 @@ export async function verifyAdminAuth() {
       }
     }
 
-    console.log('[verifyAdminAuth] ✅ Admin verified:', user.email);
+    // Récupérer le salon_id
+    const salonId = user.app_metadata?.salon_id
+    if (!salonId) {
+      return {
+        user: null,
+        salonId: null,
+        error: NextResponse.json(
+          { success: false, error: 'Aucun salon associé à cet utilisateur' },
+          { status: 403 }
+        )
+      }
+    }
+
     // Utilisateur valide
-    return { user, error: null }
+    return { user, salonId, error: null }
   } catch (err) {
     console.error('[verifyAdminAuth] Exception:', err);
     return {
       user: null,
+      salonId: null,
       error: NextResponse.json(
         { success: false, error: 'Erreur serveur lors de la vérification' },
         { status: 500 }

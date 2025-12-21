@@ -1,21 +1,18 @@
 export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 /**
  * GET — Récupère toutes les catégories actives
  * (⚠️ peut retourner 0 ligne → PAS de .single())
  */
 export async function GET() {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const salonId = getDefaultSalonId()
 
     const { data, error } = await supabaseAdmin
       .from('service_categories')
@@ -44,11 +41,10 @@ export async function GET() {
  * (⚠️ INSERT → PAS de .single())
  */
 export async function POST(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const salonId = getDefaultSalonId()
     const body = await request.json()
     const { name, color } = body
 
@@ -90,7 +86,7 @@ export async function POST(request: Request) {
  * (⚠️ UPDATE → PAS de .single())
  */
 export async function PATCH(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -143,7 +139,7 @@ export async function PATCH(request: Request) {
  * DELETE — Soft delete d’une catégorie
  */
 export async function DELETE(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {

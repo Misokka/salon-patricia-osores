@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
+import { PUBLIC_SALON_ID } from '../../../../lib/salonContext'
 
 /**
  * GET — Récupère l'image "À propos" (PUBLIC)
@@ -8,7 +8,7 @@ import { getDefaultSalonId } from '../../../../lib/salonContext'
 export async function GET() {
   try {
     const supabase = await createClient()
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
 
     const { data, error } = await supabase
       .from('images')

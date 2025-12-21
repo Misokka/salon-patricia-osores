@@ -4,24 +4,17 @@ import { updateSession } from './lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  console.log('[Middleware] Request:', pathname)
-
   const { supabase, response } = await updateSession(request)
 
   const isAdminPage = pathname.startsWith('/admin')
   const isAdminApi = pathname.startsWith('/api/admin')
   const isLoginPage = pathname === '/admin/login'
 
-  // 🔐 PROTÉGER TOUT CE QUI EST ADMIN (UI + API)
+  // Protéger toutes les routes admin (pages + API)
   if ((isAdminPage || isAdminApi) && !isLoginPage) {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    console.log('[Middleware] User:', user?.id, 'Error:', error?.message)
-
-    // ❌ Non authentifié
+    // Non authentifié
     if (error || !user) {
       if (isAdminApi) {
         return NextResponse.json(
@@ -29,14 +22,11 @@ export async function middleware(request: NextRequest) {
           { status: 401 }
         )
       }
-
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
+    // Vérifier le rôle admin
     const role = user.app_metadata?.role
-    console.log('[Middleware] User role:', role)
-
-    // ❌ Pas admin
     if (role !== 'admin') {
       if (isAdminApi) {
         return NextResponse.json(
@@ -44,19 +34,13 @@ export async function middleware(request: NextRequest) {
           { status: 403 }
         )
       }
-
       return NextResponse.redirect(new URL('/', request.url))
     }
-
-    console.log('[Middleware] ✅ Admin authorized:', pathname)
   }
 
-  // ✅ Empêcher un admin connecté d’aller sur /admin/login
+  // Rediriger si déjà connecté en admin
   if (isLoginPage) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (user?.app_metadata?.role === 'admin') {
       return NextResponse.redirect(new URL('/admin', request.url))
     }

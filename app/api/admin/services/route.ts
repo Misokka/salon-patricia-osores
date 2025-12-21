@@ -1,20 +1,20 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 /**
  * GET - Récupère tous les services actifs
  */
 export async function GET() {
+  const { salonId, error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
-    const { data, error } = await supabase
+    
+    const { data, error } = await supabaseAdmin
       .from('services')
       .select(`
         *,
@@ -51,7 +51,7 @@ export async function GET() {
  * POST - Crée un nouveau service
  */
 export async function POST(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -89,9 +89,8 @@ console.log('📥 BODY REÇU:', body)
       )
     }
 
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
-    const { data, error } = await supabase
+    
+    const { data, error } = await supabaseAdmin
       .from('services')
       .insert({
         salon_id: salonId,
@@ -131,7 +130,7 @@ console.log('📥 BODY REÇU:', body)
  * PATCH - Met à jour un service
  */
 export async function PATCH(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -185,11 +184,10 @@ export async function PATCH(request: Request) {
     }
     if (position !== undefined) updateData.position = position
 
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
     
     // Vérifier que le service existe et appartient au salon
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('services')
       .select('id')
       .eq('id', id)
@@ -203,7 +201,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('services')
       .update(updateData)
       .eq('id', id)
@@ -248,7 +246,7 @@ export async function PATCH(request: Request) {
  * DELETE - Supprime un service (soft delete)
  */
 export async function DELETE(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -262,11 +260,10 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
     // Soft delete
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('services')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)

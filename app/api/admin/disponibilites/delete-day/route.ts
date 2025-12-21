@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -10,11 +9,11 @@ import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
  * DELETE - Supprime tous les créneaux d'une date spécifique
  */
 export async function DELETE(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
+    
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date')
 
@@ -26,7 +25,7 @@ export async function DELETE(request: Request) {
     }
 
     // 1. Récupérer tous les créneaux de cette date avec leur statut
-    const { data: allSlots, error: fetchError } = await supabase
+    const { data: allSlots, error: fetchError } = await supabaseAdmin
       .from('time_slots')
       .select('id, slot_date, start_time, is_available')
       .eq('slot_date', date)
@@ -55,7 +54,7 @@ export async function DELETE(request: Request) {
 
     // 3. Supprimer uniquement les créneaux disponibles
     const slotIds = slotsToDelete.map(s => s.id)
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('time_slots')
       .delete()
       .in('id', slotIds)

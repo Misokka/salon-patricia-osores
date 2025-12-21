@@ -1,12 +1,12 @@
 ﻿import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '../../../lib/supabase/admin'
 import { sendEmailToPatricia, sendConfirmationToClient } from '../../../lib/emailService'
-import { getDefaultSalonId } from '../../../lib/salonContext'
+import { PUBLIC_SALON_ID } from '../../../lib/salonContext'
 import { validateAppointmentSlots } from '../../../lib/appointmentValidation'
 
 export async function POST(request: Request) {
   try {
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
     const body = await request.json()
     const { nom, telephone, email, service, service_id, date, heure, message, required_slot_ids } = body
 

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getDefaultSalonId } from '../../../lib/salonContext'
+import { PUBLIC_SALON_ID } from '../../../lib/salonContext'
 
 // Initialiser le client Supabase
 function getSupabase() {
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
 
     // Récupérer les jours fermés
     const { data: closedDays } = await getSupabase()

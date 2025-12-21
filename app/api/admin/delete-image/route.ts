@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -17,7 +16,7 @@ import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
  * - success: boolean
  */
 export async function DELETE(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -33,8 +32,8 @@ export async function DELETE(request: Request) {
     }
 
     // Supprimer de Supabase Storage avec auth admin
-    const supabase = supabaseAdmin
-    const { error: deleteError } = await supabase
+    
+    const { error: deleteError } = await supabaseAdmin
       .storage
       .from('salon-images')
       .remove([path])
@@ -48,7 +47,7 @@ export async function DELETE(request: Request) {
 
     // Si c'est pour un service, clear le champ image_url
     if (serviceId) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('services')
         .update({ image_url: null })
         .eq('id', serviceId)

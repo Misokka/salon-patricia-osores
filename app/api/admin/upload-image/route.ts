@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -19,7 +18,7 @@ import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
  * - path: chemin dans le bucket
  */
 export async function POST(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
@@ -69,11 +68,11 @@ export async function POST(request: Request) {
     const filePath = `${folder}/${fileName}`
 
     // Upload vers Supabase Storage avec auth admin
-    const supabase = supabaseAdmin
+    
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const { data: uploadData, error: uploadError } = await supabase
+    const { data: uploadData, error: uploadError } = await supabaseAdmin
       .storage
       .from('salon-images')
       .upload(filePath, buffer, {
@@ -89,14 +88,14 @@ export async function POST(request: Request) {
     }
 
     // Récupérer l'URL publique
-    const { data: { publicUrl } } = supabase
+    const { data: { publicUrl } } = supabaseAdmin
       .storage
       .from('salon-images')
       .getPublicUrl(filePath)
 
     // Si c'est pour un service, mettre à jour la table services
     if (serviceId && folder === 'featured-services') {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('services')
         .update({ image_url: publicUrl })
         .eq('id', serviceId)

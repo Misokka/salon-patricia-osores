@@ -1,22 +1,20 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 import { addDays, addMinutes, format, parse, parseISO } from 'date-fns'
 
 /**
  * GET – Récupère tous les horaires exceptionnels
  */
 export async function GET() {
-  try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+  const { salonId, error: authError } = await verifyAdminAuth()
+  if (authError) return authError
 
-    const { data, error } = await supabase
+  try {
+    const { data, error } = await supabaseAdmin
       .from('exceptional_periods')
       .select(`*, exceptional_time_ranges (*)`)
       .eq('salon_id', salonId)
@@ -37,12 +35,11 @@ export async function GET() {
  * POST – Crée un horaire exceptionnel
  */
 export async function POST(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
     const body = await request.json()
 
     const {
@@ -62,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     if (type === 'closed' && !confirm_cancel_appointments) {
-      const { data: appointments } = await supabase
+      const { data: appointments } = await supabaseAdmin
         .from('appointments')
         .select(`
           id,
@@ -96,7 +93,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: exceptional, error } = await supabase
+    const { data: exceptional, error } = await supabaseAdmin
       .from('exceptional_periods')
       .insert({
         salon_id: salonId,
@@ -111,7 +108,7 @@ export async function POST(request: Request) {
     if (error) throw error
 
     if (type === 'closed' && confirm_cancel_appointments) {
-      const { data: appointments } = await supabase
+      const { data: appointments } = await supabaseAdmin
         .from('appointments')
         .select(`id`)
         .eq('salon_id', salonId)
@@ -120,13 +117,13 @@ export async function POST(request: Request) {
         .eq('status', 'accepted')
 
       if (appointments?.length) {
-        await supabase
+        await supabaseAdmin
           .from('appointments')
           .update({ status: 'cancelled' })
           .in('id', appointments.map(a => a.id))
       }
 
-      const { data: slots } = await supabase
+      const { data: slots } = await supabaseAdmin
         .from('time_slots')
         .select('id')
         .eq('salon_id', salonId)
@@ -135,7 +132,7 @@ export async function POST(request: Request) {
         .eq('is_available', true)
 
       if (slots?.length) {
-        await supabase
+        await supabaseAdmin
           .from('time_slots')
           .delete()
           .in('id', slots.map(s => s.id))
@@ -151,12 +148,12 @@ export async function POST(request: Request) {
         slot_frequency_minutes: r.slot_frequency_minutes,
       }))
 
-      await supabase.from('exceptional_time_ranges').insert(ranges)
+      await supabaseAdmin.from('exceptional_time_ranges').insert(ranges)
 
       let totalSlots = 0
       for (const range of time_ranges) {
         totalSlots += await generateExceptionalSlots(
-          supabase,
+          supabaseAdmin,
           salonId,
           start_date,
           end_date,
@@ -193,12 +190,11 @@ export async function POST(request: Request) {
  * DELETE – Supprime un horaire exceptionnel
  */
 export async function DELETE(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -209,7 +205,7 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const { data: exceptional, error } = await supabase
+    const { data: exceptional, error } = await supabaseAdmin
       .from('exceptional_periods')
       .select('*')
       .eq('id', id)
@@ -218,7 +214,7 @@ export async function DELETE(request: Request) {
 
     if (error) throw error
 
-    await supabase.from('exceptional_periods').delete().eq('id', id)
+    await supabaseAdmin.from('exceptional_periods').delete().eq('id', id)
 
     return NextResponse.json({
       success: true,
@@ -269,7 +265,7 @@ async function generateExceptionalSlots(
 
   if (!slots.length) return 0
 
-  const { error } = await supabase.from('time_slots').insert(slots)
+  const { error } = await supabaseAdmin.from('time_slots').insert(slots)
   if (error) return 0
 
   return slots.length

@@ -1,23 +1,20 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 /**
  * GET - Récupère tous les créneaux (time slots)
  */
 export async function GET() {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
-    const { data, error } = await supabase
+    
+    const { data, error } = await supabaseAdmin
       .from('time_slots')
       .select('*')
       .eq('salon_id', salonId)
@@ -47,12 +44,11 @@ export async function GET() {
  * POST - Crée un ou plusieurs créneaux
  */
 export async function POST(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
     const body = await request.json()
     const { slot_date, start_times } = body
 
@@ -70,7 +66,7 @@ export async function POST(request: Request) {
       is_available: true,
     }))
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('time_slots')
       .insert(slots)
       .select()
@@ -98,18 +94,17 @@ export async function POST(request: Request) {
  * DELETE - Supprime un ou plusieurs créneaux
  */
 export async function DELETE(request: Request) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
+    
     const { searchParams } = new URL(request.url)
     const slot_date = searchParams.get('slot_date')
-    const salonId = getDefaultSalonId()
 
     if (slot_date) {
       // Supprimer tous les créneaux d'une date
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('time_slots')
         .delete()
         .eq('slot_date', slot_date)

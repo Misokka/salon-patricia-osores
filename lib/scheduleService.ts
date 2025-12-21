@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 import { format, parseISO, isWithinInterval } from 'date-fns'
-import { getDefaultSalonId } from './salonContext'
+import { PUBLIC_SALON_ID } from './salonContext'
 
 const DAYS_FR_TO_EN: Record<number, string> = {
   0: 'Monday',
@@ -30,7 +30,7 @@ interface OpeningHoursSpec {
  */
 export async function generateSchemaOpeningHours(): Promise<OpeningHoursSpec[]> {
   try {
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
     const today = format(new Date(), 'yyyy-MM-dd')
 
     // 1. Récupérer les horaires standards
@@ -86,7 +86,7 @@ export async function generateSchemaOpeningHours(): Promise<OpeningHoursSpec[]> 
  */
 export async function getPublicScheduleServer() {
   try {
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
     const today = format(new Date(), 'yyyy-MM-dd')
 
     // Récupérer toutes les données nécessaires

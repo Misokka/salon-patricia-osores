@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { addMinutes, parse, format } from 'date-fns'
-import { getDefaultSalonId } from '@/lib/salonContext'
+import { PUBLIC_SALON_ID } from '@/lib/salonContext'
 
 // Initialiser le client Supabase
 function getSupabase() {
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
 
     // Récupérer la fréquence des créneaux
     const { data: settings } = await getSupabase()

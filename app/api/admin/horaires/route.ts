@@ -1,36 +1,31 @@
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 /**
  * GET — Opening days + time ranges + salon settings
  */
 export async function GET() {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
-
     const [salonRes, daysRes, rangesRes] = await Promise.all([
-      supabase
+      supabaseAdmin
         .from('salons')
         .select('online_booking_enabled')
         .eq('id', salonId)
         .maybeSingle(),
 
-      supabase
+      supabaseAdmin
         .from('opening_days')
         .select('*')
         .eq('salon_id', salonId)
         .order('day_of_week'),
 
-      supabase
+      supabaseAdmin
         .from('opening_time_ranges')
         .select('*')
         .eq('salon_id', salonId)
@@ -46,8 +41,7 @@ export async function GET() {
       success: true,
       data: {
         settings: {
-          online_booking_enabled:
-            salonRes.data?.online_booking_enabled ?? true,
+          online_booking_enabled: salonRes.data?.online_booking_enabled ?? true,
           default_slot_frequency_minutes: 30,
         },
         hours: daysRes.data ?? [],
@@ -55,14 +49,8 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('[API /api/admin/horaires GET]', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        details:
-          error instanceof Error ? error.message : 'Unknown error',
-      },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     )
   }
@@ -72,19 +60,17 @@ export async function GET() {
  * POST — Update opening days OR add time range OR settings
  */
 export async function POST(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
     const body = await request.json()
     const { type, data } = body
 
     if (type === 'settings') {
       const { online_booking_enabled } = data
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('salons')
         .update({ online_booking_enabled })
         .eq('id', salonId)
@@ -96,7 +82,7 @@ export async function POST(request: Request) {
     if (type === 'day') {
       const { day_of_week, is_open } = data
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('opening_days')
         .upsert(
           {
@@ -119,7 +105,7 @@ export async function POST(request: Request) {
         slot_frequency_minutes,
       } = data
 
-      const { data: newRange, error } = await supabase
+      const { data: newRange, error } = await supabaseAdmin
         .from('opening_time_ranges')
         .insert({
           salon_id: salonId,
@@ -152,15 +138,15 @@ export async function POST(request: Request) {
  * PATCH — Update a time range
  */
 export async function PATCH(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
+    
     const body = await request.json()
     const { id, start_time, end_time, slot_frequency_minutes } = body
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('opening_time_ranges')
       .update({ start_time, end_time, slot_frequency_minutes })
       .eq('id', id)
@@ -180,11 +166,11 @@ export async function PATCH(request: Request) {
  * DELETE — Delete a time range
  */
 export async function DELETE(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
+    
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -195,7 +181,7 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('opening_time_ranges')
       .delete()
       .eq('id', id)

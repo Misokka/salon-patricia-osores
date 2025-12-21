@@ -1,11 +1,9 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../../lib/salonContext'
 
 const GALLERY_TYPE = 'gallery'
 const MAX_GALLERY_IMAGES = 6
@@ -14,14 +12,13 @@ const MAX_GALLERY_IMAGES = 6
  * GET — Récupère toutes les images de la galerie (ADMIN)
  */
 export async function GET() {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('images')
       .select(
         `
@@ -71,12 +68,11 @@ export async function GET() {
  * POST — Ajoute une image à la galerie (ADMIN)
  */
 export async function POST(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
     const body = await request.json()
     const imageUrl = body?.imageUrl as string | undefined
@@ -92,7 +88,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier qu'on ne dépasse pas MAX_GALLERY_IMAGES
-    const { count, error: countError } = await supabase
+    const { count, error: countError } = await supabaseAdmin
       .from('images')
       .select('id', { count: 'exact', head: true })
       .eq('salon_id', salonId)
@@ -114,7 +110,7 @@ export async function POST(request: Request) {
     }
 
     // Insert
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('images')
       .insert({
         salon_id: salonId,
@@ -169,12 +165,11 @@ export async function POST(request: Request) {
  * Champs possibles: serviceId, imageUrl, altText, position, isVisible
  */
 export async function PATCH(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
     const body = await request.json()
     const id = body?.id as string | undefined
@@ -187,7 +182,7 @@ export async function PATCH(request: Request) {
     }
 
     // Sécurité : vérifier que l'image appartient bien à CE salon + est de type gallery
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from('images')
       .select('id')
       .eq('id', id)
@@ -218,7 +213,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('images')
       .update(updateData)
       .eq('id', id)
@@ -265,12 +260,11 @@ export async function PATCH(request: Request) {
  * DELETE — Supprime une image de la galerie (soft delete) (ADMIN)
  */
 export async function DELETE(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -283,7 +277,7 @@ export async function DELETE(request: Request) {
     }
 
     // Sécurité : ne delete que si appartient à salon + type=gallery
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from('images')
       .select('id')
       .eq('id', id)
@@ -299,7 +293,7 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('images')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)

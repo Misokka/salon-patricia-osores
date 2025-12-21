@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
+import { PUBLIC_SALON_ID } from '../../../../lib/salonContext'
 import { format, parseISO, isWithinInterval } from 'date-fns'
 
 function getSupabase() {
@@ -41,7 +41,7 @@ interface DaySchedule {
  */
 export async function GET() {
   try {
-    const salonId = getDefaultSalonId()
+    const salonId = PUBLIC_SALON_ID
     const todayStr = format(new Date(), 'yyyy-MM-dd')
 
     /* =====================

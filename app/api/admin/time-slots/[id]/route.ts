@@ -1,25 +1,22 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../../lib/salonContext'
 
 export async function DELETE(
   request: Request,
   context: any
 ) {
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
+    
     const { id } = context.params
-    const salonId = getDefaultSalonId()
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('time_slots')
       .delete()
       .eq('id', id)

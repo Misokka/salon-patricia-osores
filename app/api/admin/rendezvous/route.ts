@@ -1,12 +1,10 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendAcceptanceEmail, sendRejectionEmail, sendCancellationEmail } from '../../../../lib/emailService'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 // 🔒 Fonctionnalité Google Agenda temporairement désactivée pour le premier déploiement
 // import { createCalendarEvent } from '../../../../lib/googleCalendarService'
 
@@ -33,13 +31,12 @@ type AppointmentWithService = {
  */
 export async function GET() {
   // Vérifier l'authentification admin
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
-    const { data, error } = await supabase
+    
+    const { data, error } = await supabaseAdmin
       .from('appointments')
       .select(`
         *,
@@ -84,11 +81,11 @@ export async function GET() {
  */
 export async function PATCH(request: Request) {
   // Vérifier l'authentification admin
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
+    
     const body = await request.json()
     const { id, statut, status } = body
 
@@ -124,7 +121,7 @@ export async function PATCH(request: Request) {
     }
 
     // Récupérer les informations du rendez-vous avant mise à jour
-    const { data: rdvData, error: fetchError } = await supabase
+    const { data: rdvData, error: fetchError } = await supabaseAdmin
       .from('appointments')
       .select('*')
       .eq('id', id)
@@ -138,7 +135,7 @@ export async function PATCH(request: Request) {
     }
 
     // Mise à jour du statut dans Supabase
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('appointments')
       .update({ status: newStatus })
       .eq('id', id)
@@ -154,14 +151,14 @@ export async function PATCH(request: Request) {
 
     // Si le rendez-vous est annulé, libérer les créneaux associés
     if (newStatus === 'cancelled') {
-      const { data: slots, error: slotsError } = await supabase
+      const { data: slots, error: slotsError } = await supabaseAdmin
         .from('appointment_slots')
         .select('time_slot_id')
         .eq('appointment_id', id)
 
       if (!slotsError && slots && slots.length > 0) {
         const slotIds = slots.map(s => s.time_slot_id)
-        await supabase
+        await supabaseAdmin
           .from('time_slots')
           .update({ is_available: true })
           .in('id', slotIds)
@@ -172,7 +169,7 @@ export async function PATCH(request: Request) {
     // Envoi d'email selon le statut
     try {
       // Récupérer le nom du service pour tous les emails
-      const { data: serviceData } = await supabase
+      const { data: serviceData } = await supabaseAdmin
         .from('services')
         .select('name')
         .eq('id', rdvData.service_id)

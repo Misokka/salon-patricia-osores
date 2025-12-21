@@ -1,11 +1,9 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '@/lib/salonContext'
 import { validateAppointmentSlots } from '@/lib/appointmentValidation'
 
 /**
@@ -14,12 +12,11 @@ import { validateAppointmentSlots } from '@/lib/appointmentValidation'
  */
 export async function POST(request: Request) {
   // Vérifier que l'utilisateur est admin
-  const { user, error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
     const body = await request.json()
     
     const {
@@ -56,11 +53,9 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log(`👨‍💼 Admin "${user.email}" crée un RDV : ${required_slot_ids.length} créneaux pour "${service_name}"`)
-
-    // 🔒 VALIDATION STRICTE : Vérifier que les créneaux correspondent exactement au service
+    // Validation stricte : Vérifier que les créneaux correspondent exactement au service
     const validation = await validateAppointmentSlots(
-      supabase,
+      supabaseAdmin,
       service_id,
       required_slot_ids,
       salonId
@@ -79,7 +74,7 @@ export async function POST(request: Request) {
 
 
     // Vérifier atomiquement que TOUS les créneaux requis sont disponibles
-    const { data: slotsToCheck, error: checkError } = await supabase
+    const { data: slotsToCheck, error: checkError } = await supabaseAdmin
       .from('time_slots')
       .select('id, start_time, is_available')
       .in('id', required_slot_ids)
@@ -117,7 +112,7 @@ export async function POST(request: Request) {
     const normalizedNote = internal_note?.trim() || null
 
     // Créer le rendez-vous avec statut "accepted" (confirmé par admin)
-    const { data: newAppointment, error: insertError } = await supabase
+    const { data: newAppointment, error: insertError } = await supabaseAdmin
       .from('appointments')
       .insert([
         {
@@ -144,14 +139,14 @@ export async function POST(request: Request) {
     const appointmentId = newAppointment.id
 
     // Marquer tous les créneaux comme non disponibles
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('time_slots')
       .update({ is_available: false })
       .in('id', required_slot_ids)
 
     if (updateError) {
       // Rollback : supprimer le rendez-vous créé
-      await supabase.from('appointments').delete().eq('id', appointmentId)
+      await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la réservation des créneaux' },
         { status: 500 }
@@ -165,14 +160,14 @@ export async function POST(request: Request) {
       slot_order: index + 1,
     }))
 
-    const { error: linksError } = await supabase
+    const { error: linksError } = await supabaseAdmin
       .from('appointment_slots')
       .insert(slotsLinks)
 
     if (linksError) {
       // Rollback : supprimer le rendez-vous et libérer les créneaux
-      await supabase.from('appointments').delete().eq('id', appointmentId)
-      await supabase
+      await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
+      await supabaseAdmin
         .from('time_slots')
         .update({ is_available: true })
         .in('id', required_slot_ids)

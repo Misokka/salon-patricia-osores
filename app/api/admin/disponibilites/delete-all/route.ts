@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
@@ -13,14 +12,14 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 export async function DELETE(request: Request) {
   try {
     // Vérification admin
-    const { user, error } = await verifyAdminAuth()
+    const { salonId, user, error } = await verifyAdminAuth()
     if (error) return error
 
 
-    const supabase = supabaseAdmin
+    
 
     // 1. Récupérer tous les créneaux disponibles
-    const { data: allSlots, error: fetchError } = await supabase
+    const { data: allSlots, error: fetchError } = await supabaseAdmin
       .from('time_slots')
       .select('id, slot_date, start_time')
       .eq('is_available', true)
@@ -41,7 +40,7 @@ export async function DELETE(request: Request) {
     }
 
     // 2. Récupérer tous les rendez-vous confirmés ou en attente
-    const { data: bookedSlots, error: rdvError } = await supabase
+    const { data: bookedSlots, error: rdvError } = await supabaseAdmin
       .from('appointments')
       .select('appointment_date, start_time')
       .in('status', ['accepted', 'pending'])
@@ -75,7 +74,7 @@ export async function DELETE(request: Request) {
     // 6. Supprimer uniquement les créneaux non bookés
     const slotIds = slotsToDelete.map((s) => s.id)
     
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('time_slots')
       .delete()
       .in('id', slotIds)

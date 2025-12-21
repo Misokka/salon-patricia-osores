@@ -1,11 +1,9 @@
 export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
-import { getDefaultSalonId } from '../../../../lib/salonContext'
 
 const IMAGE_TYPE = 'service_featured'
 const BUCKET = 'salon-images'
@@ -14,12 +12,11 @@ const BUCKET = 'salon-images'
    POST — Upload image FEATURED (1 seule image active)
 ====================================================== */
 export async function POST(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -54,7 +51,7 @@ export async function POST(request: Request) {
        Soft-delete ancienne image
        (RÈGLE MÉTIER CLÉ)
     ----------------------------- */
-    await supabase
+    await supabaseAdmin
       .from('images')
       .update({ deleted_at: new Date().toISOString() })
       .eq('salon_id', salonId)
@@ -70,7 +67,7 @@ export async function POST(request: Request) {
     const storagePath = `services/${fileName}`
 
     const buffer = await file.arrayBuffer()
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from(BUCKET)
       .upload(storagePath, buffer, {
         contentType: file.type,
@@ -84,7 +81,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = supabaseAdmin.storage
       .from(BUCKET)
       .getPublicUrl(storagePath)
 
@@ -98,7 +95,7 @@ export async function POST(request: Request) {
     /* -----------------------------
        Insert DB (image active unique)
     ----------------------------- */
-    const { data: image, error: insertError } = await supabase
+    const { data: image, error: insertError } = await supabaseAdmin
       .from('images')
       .insert({
         salon_id: salonId,
@@ -113,7 +110,7 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
-      await supabase.storage.from(BUCKET).remove([storagePath])
+      await supabaseAdmin.storage.from(BUCKET).remove([storagePath])
 
       return NextResponse.json(
         { success: false, error: 'Erreur création image' },
@@ -138,12 +135,11 @@ export async function POST(request: Request) {
    DELETE — Supprimer image FEATURED
 ====================================================== */
 export async function DELETE(request: Request) {
-  const { error: authError } = await verifyAdminAuth()
+  const { salonId, error: authError } = await verifyAdminAuth()
   if (authError) return authError
 
   try {
-    const supabase = supabaseAdmin
-    const salonId = getDefaultSalonId()
+    
 
     const { searchParams } = new URL(request.url)
     const imageId = searchParams.get('imageId')
@@ -158,7 +154,7 @@ export async function DELETE(request: Request) {
     /* -----------------------------
        Fetch image sécurisée
     ----------------------------- */
-    const { data: image, error } = await supabase
+    const { data: image, error } = await supabaseAdmin
       .from('images')
       .select('image_url')
       .eq('id', imageId)
@@ -177,7 +173,7 @@ export async function DELETE(request: Request) {
     /* -----------------------------
        Soft delete DB
     ----------------------------- */
-    await supabase
+    await supabaseAdmin
       .from('images')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', imageId)
@@ -189,7 +185,7 @@ export async function DELETE(request: Request) {
       const url = new URL(image.image_url)
       const path = url.pathname.split(`/${BUCKET}/`)[1]
       if (path) {
-        await supabase.storage.from(BUCKET).remove([path])
+        await supabaseAdmin.storage.from(BUCKET).remove([path])
       }
     } catch {
       console.warn('Suppression storage partielle')
