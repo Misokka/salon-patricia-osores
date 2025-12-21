@@ -138,7 +138,7 @@ export default function ChoixDateHeurePage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-4xl font-brand text-dark">
-            Réserver en ligne chez Salon Patricia Osores
+            Réserver en ligne chez Salon Démo
           </h1>
           <p className="text-gray-600 mt-1">
             Étape 2 sur 3 – Choix de la date et de l'heure

@@ -74,7 +74,7 @@ export default function ServicesPage() {
         {/* En-tête */}
         <div className="mb-8">
           <h1 className="text-4xl font-brand font-normal mb-2 text-dark">
-            Réserver en ligne chez Salon Patricia Osores
+            Réserver en ligne chez Salon Démo
           </h1>
           <p className="text-gray-600">
             24h/24 - Gratuitement - Paiement sur place - Confirmation immédiate
