@@ -1,9 +1,9 @@
 import RendezVous from '../../components/RendezVous';
 
 export const metadata = {
-  title: 'Prendre rendez-vous - Salon Patricia Osores',
+  title: 'Prendre rendez-vous - Salon Démo',
   description:
-    'Réservez votre séance au salon Patricia Osores à Liège : coupe, couleur, balayage ou soin capillaire. Simple et rapide en ligne.',
+    'Réservez votre séance au salon Démo à Liège : coupe, couleur, balayage ou soin capillaire. Simple et rapide en ligne.',
 }
 
 export default function RendezVousPage() {

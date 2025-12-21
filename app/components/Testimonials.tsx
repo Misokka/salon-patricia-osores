@@ -8,12 +8,12 @@ import { FaStar } from "react-icons/fa";
 const testimonials = [
   {
     name: "Jingwen",
-    text: "Très gentil, eficaz, prix correct. J'ai bien aimer le résultat. La coiffeuse Patricia elle sais parler espagnol , français et anglais.",
+    text: "Très gentil, eficaz, prix correct. J'ai bien aimer le résultat. La coiffeuse est vraiment bien.",
     rating: 5,
   },
   {
     name: "Dannia",
-    text: "Une très bonne expérience ! J'ai adoré la coupe. Patricia est très sympathique.",
+    text: "Une très bonne expérience ! J'ai adoré la coupe. C'était très sympathique.",
     rating: 5,
   },
   {

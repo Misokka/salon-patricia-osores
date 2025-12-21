@@ -4,7 +4,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import AdminContent from "./AdminContent";
 
 export const metadata: Metadata = {
-  title: "Rendez-vous — Admin | Salon Patricia Osores",
+  title: "Rendez-vous — Admin | Salon Démo",
   description: "Interface d'administration pour gérer les demandes de rendez-vous.",
 };
 

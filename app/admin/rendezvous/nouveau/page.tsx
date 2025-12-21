@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import CreateAppointmentForm from "../../../components/admin/CreateAppointmentForm";
 
 export const metadata: Metadata = {
-  title: "Nouveau rendez-vous — Admin | Salon Patricia Osores",
+  title: "Nouveau rendez-vous — Admin | Salon Démo",
   description: "Créer un rendez-vous manuellement pour un client.",
 };
 

@@ -143,7 +143,7 @@ function AdminLoginForm() {
 
         {/* Pied de page */}
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>© 2025 Salón Patricia Osores. Tous droits réservés.</p>
+          <p>© 2025 Salon Démo. Tous droits réservés.</p>
         </div>
       </div>
     </div>
