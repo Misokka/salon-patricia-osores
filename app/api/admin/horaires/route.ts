@@ -1,6 +1,5 @@
-export const dynamic = 'force-dynamic';
-
-export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -11,6 +10,9 @@ import { getDefaultSalonId } from '../../../../lib/salonContext'
  * GET — Opening days + time ranges + salon settings
  */
 export async function GET() {
+  const { error: authError } = await verifyAdminAuth()
+  if (authError) return authError
+
   try {
     const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
@@ -20,7 +22,7 @@ export async function GET() {
         .from('salons')
         .select('online_booking_enabled')
         .eq('id', salonId)
-        .single(),
+        .maybeSingle(),
 
       supabase
         .from('opening_days')
@@ -44,24 +46,30 @@ export async function GET() {
       success: true,
       data: {
         settings: {
-          online_booking_enabled: salonRes.data?.online_booking_enabled ?? true,
-          default_slot_frequency_minutes: 30, // Default value
+          online_booking_enabled:
+            salonRes.data?.online_booking_enabled ?? true,
+          default_slot_frequency_minutes: 30,
         },
         hours: daysRes.data ?? [],
         ranges: rangesRes.data ?? [],
       },
     })
   } catch (error) {
-    console.error('[API /api/admin/horaires GET] Error:', error);
+    console.error('[API /api/admin/horaires GET]', error)
     return NextResponse.json(
-      { success: false, error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        success: false,
+        error: 'Internal server error',
+        details:
+          error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }
 }
 
 /**
- * POST — Update opening days OR add time range
+ * POST — Update opening days OR add time range OR settings
  */
 export async function POST(request: Request) {
   const { error: authError } = await verifyAdminAuth()
@@ -74,7 +82,6 @@ export async function POST(request: Request) {
     const { type, data } = body
 
     if (type === 'settings') {
-      // Update salon settings (online booking)
       const { online_booking_enabled } = data
 
       const { error } = await supabase
@@ -91,20 +98,26 @@ export async function POST(request: Request) {
 
       const { error } = await supabase
         .from('opening_days')
-        .upsert({
-          salon_id: salonId,
-          day_of_week,
-          is_open,
-        }, {
-          onConflict: 'salon_id,day_of_week'
-        })
+        .upsert(
+          {
+            salon_id: salonId,
+            day_of_week,
+            is_open,
+          },
+          { onConflict: 'salon_id,day_of_week' }
+        )
 
       if (error) throw error
       return NextResponse.json({ success: true })
     }
 
     if (type === 'range') {
-      const { day_of_week, start_time, end_time, slot_frequency_minutes } = data
+      const {
+        day_of_week,
+        start_time,
+        end_time,
+        slot_frequency_minutes,
+      } = data
 
       const { data: newRange, error } = await supabase
         .from('opening_time_ranges')
@@ -127,6 +140,7 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   } catch (error) {
+    console.error('[API /api/admin/horaires POST]', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -135,7 +149,7 @@ export async function POST(request: Request) {
 }
 
 /**
- * PATCH — Update a time range (NO slot generation here)
+ * PATCH — Update a time range
  */
 export async function PATCH(request: Request) {
   const { error: authError } = await verifyAdminAuth()
@@ -154,6 +168,7 @@ export async function PATCH(request: Request) {
     if (error) throw error
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('[API /api/admin/horaires PATCH]', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -163,7 +178,6 @@ export async function PATCH(request: Request) {
 
 /**
  * DELETE — Delete a time range
- * (slots cleanup is delegated or optional)
  */
 export async function DELETE(request: Request) {
   const { error: authError } = await verifyAdminAuth()
@@ -173,8 +187,12 @@ export async function DELETE(request: Request) {
     const supabase = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+
     if (!id) {
-      return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: 'Missing id' },
+        { status: 400 }
+      )
     }
 
     const { error } = await supabase
@@ -185,6 +203,7 @@ export async function DELETE(request: Request) {
     if (error) throw error
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('[API /api/admin/horaires DELETE]', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
