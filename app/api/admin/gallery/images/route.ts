@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
 import { getDefaultSalonId } from '../../../../../lib/salonContext'
 
@@ -14,7 +14,7 @@ export async function GET() {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
 
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
 
     const body = await request.json()
@@ -169,7 +169,7 @@ export async function PATCH(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
 
     const body = await request.json()
@@ -265,7 +265,7 @@ export async function DELETE(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
 
     const { searchParams } = new URL(request.url)

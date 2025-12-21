@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, format } from 'date-fns'
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     }
 
     // Créer client Supabase
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
 
     // Query de base - récupérer les rendez-vous
     let query = supabase

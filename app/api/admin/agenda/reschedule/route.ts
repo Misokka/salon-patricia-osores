@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendRescheduleEmail } from '@/lib/emailService'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -25,7 +25,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
 
     // Récupérer le rendez-vous actuel
     const { data: rdv, error: fetchError } = await supabase

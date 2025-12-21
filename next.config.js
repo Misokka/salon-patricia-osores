@@ -29,10 +29,6 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     unoptimized: process.env.NODE_ENV === 'development',
   },
-  // Désactiver la vérification des IPs privées en dev
-  experimental: {
-    allowedOrigins: ['127.0.0.1:54321', 'localhost:54321'],
-  },
 }
 
 module.exports = nextConfig

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 /**
  * GET - Récupère les créneaux disponibles pour une date donnée
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
 
     // 1. Récupérer les disponibilités créées pour cette date
     const { data: dispos, error: dispoError } = await supabase

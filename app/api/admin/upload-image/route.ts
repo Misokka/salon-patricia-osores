@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '../../../../lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
 
 /**
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const filePath = `${folder}/${fileName}`
 
     // Upload vers Supabase Storage avec auth admin
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
 import { getDefaultSalonId } from '../../../../../lib/salonContext'
 
@@ -11,7 +11,7 @@ export async function DELETE(
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const { id } = context.params
     const salonId = getDefaultSalonId()
 

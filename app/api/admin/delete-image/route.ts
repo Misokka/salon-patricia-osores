@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '../../../../lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
 
 /**
@@ -29,7 +29,7 @@ export async function DELETE(request: Request) {
     }
 
     // Supprimer de Supabase Storage avec auth admin
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const { error: deleteError } = await supabase
       .storage
       .from('salon-images')

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../../lib/auth/verifyAdmin'
 
 /**
@@ -10,7 +10,7 @@ export async function DELETE(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date')
 

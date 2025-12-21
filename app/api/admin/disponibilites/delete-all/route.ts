@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 /**
  * DELETE - Supprime TOUS les créneaux non réservés
@@ -13,7 +13,7 @@ export async function DELETE(request: Request) {
     if (error) return error
 
 
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
 
     // 1. Récupérer tous les créneaux disponibles
     const { data: allSlots, error: fetchError } = await supabase

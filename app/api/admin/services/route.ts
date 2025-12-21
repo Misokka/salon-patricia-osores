@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
 import { getDefaultSalonId } from '../../../../lib/salonContext'
 
@@ -8,7 +8,7 @@ import { getDefaultSalonId } from '../../../../lib/salonContext'
  */
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
     const { data, error } = await supabase
       .from('services')
@@ -85,7 +85,7 @@ console.log('📥 BODY REÇU:', body)
       )
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
     const { data, error } = await supabase
       .from('services')
@@ -181,7 +181,7 @@ export async function PATCH(request: Request) {
     }
     if (position !== undefined) updateData.position = position
 
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
     
     // Vérifier que le service existe et appartient au salon
@@ -258,7 +258,7 @@ export async function DELETE(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
 
     // Soft delete

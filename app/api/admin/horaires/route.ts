@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
 import { getDefaultSalonId } from '../../../../lib/salonContext'
 
@@ -8,7 +8,7 @@ import { getDefaultSalonId } from '../../../../lib/salonContext'
  */
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
 
     const [salonRes, daysRes, rangesRes] = await Promise.all([
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const salonId = getDefaultSalonId()
     const body = await request.json()
     const { type, data } = body
@@ -137,7 +137,7 @@ export async function PATCH(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const body = await request.json()
     const { id, start_time, end_time, slot_frequency_minutes } = body
 
@@ -165,7 +165,7 @@ export async function DELETE(request: Request) {
   if (authError) return authError
 
   try {
-    const supabase = await createClient()
+    const supabase = supabaseAdmin
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     if (!id) {
