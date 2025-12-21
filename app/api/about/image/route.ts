@@ -10,6 +10,8 @@ export async function GET() {
     const supabase = await createClient()
     const salonId = PUBLIC_SALON_ID
 
+    console.log('[GET /api/about/image] Fetching for salon:', salonId)
+
     const { data, error } = await supabase
       .from('images')
       .select('image_url, alt_text')
@@ -18,6 +20,8 @@ export async function GET() {
       .eq('is_visible', true)
       .is('deleted_at', null)
       .single()
+
+    console.log('[GET /api/about/image] Result:', { data, error: error?.message })
 
     // PGRST116 = aucune ligne (normal si pas d'image)
     if (error && error.code !== 'PGRST116') {

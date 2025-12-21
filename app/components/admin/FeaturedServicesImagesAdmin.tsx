@@ -82,9 +82,10 @@ export default function FeaturedServicesImagesAdmin() {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('service_id', serviceId)
-      formData.append('type', 'featured')
 
-      const res = await apiClient.post('/api/admin/images', formData)
+      const res = await apiClient.post('/api/admin/images', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
 
       setServices(prev =>
         prev.map(s => (s.id === serviceId ? { ...s, image: res.data.data } : s))

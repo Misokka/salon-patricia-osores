@@ -7,9 +7,22 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: typeof window !== 'undefined' ? window.location.origin : '',
   withCredentials: true, // ⚠️ CRUCIAL : inclut les cookies Supabase dans les requêtes
-  headers: {
-    'Content-Type': 'application/json',
-  },
+});
+
+// Intercepteur pour gérer automatiquement les FormData
+apiClient.interceptors.request.use((config) => {
+  // Si le body est un FormData, supprimer le Content-Type pour laisser axios/navigateur le gérer
+  if (config.data instanceof FormData) {
+    if (config.headers) {
+      delete config.headers['Content-Type'];
+    }
+  } else {
+    // Sinon, forcer JSON
+    if (config.headers && !config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+  }
+  return config;
 });
 
 // Intercepteur pour logger les erreurs en développement

@@ -130,7 +130,9 @@ export default function GalleryAdmin() {
       formData.append('file', file)
       formData.append('folder', 'gallery')
 
-      const uploadRes = await apiClient.post('/api/admin/upload-image', formData)
+      const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
 
       await apiClient.post('/api/admin/gallery/images', {
         imageUrl: uploadRes.data.data.publicUrl,
@@ -156,7 +158,9 @@ export default function GalleryAdmin() {
       formData.append('file', file)
       formData.append('folder', 'gallery')
 
-      const uploadRes = await apiClient.post('/api/admin/upload-image', formData)
+      const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
 
       await apiClient.patch('/api/admin/gallery/images', {
         id: image.id,

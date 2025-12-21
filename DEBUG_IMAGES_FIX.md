@@ -1,116 +1,117 @@
 # Fix Images Upload - Services & Gallery
 
-## Problème identifié
+## Problèmes identifiés (UPDATE)
 
-Les routes `/api/admin/images` (services featured) et `/api/admin/gallery/images` retournaient des erreurs 500, contrairement à `/api/admin/about/image` qui fonctionne.
+### 1. Services Featured - Erreur FormData
+**Erreur** : `Content-Type was not one of "multipart/form-data" or "application/x-www-form-urlencoded"`
 
-## Diagnostic
+**Cause** : `apiClient` forçait `Content-Type: application/json` dans tous les cas, empêchant l'envoi de FormData.
 
-Toutes les routes étaient correctement implémentées :
-- ✅ Récupération de `salonId` depuis `verifyAdminAuth()`
-- ✅ Utilisation de `supabaseAdmin` (SERVICE_ROLE_KEY)
-- ✅ Envoi de tous les champs requis par la table `images`
+**Solution** :
+- ✅ Intercepteur dans `apiClient` pour détecter FormData et supprimer le Content-Type
+- ✅ Header explicite `'Content-Type': 'multipart/form-data'` dans les composants front
 
-**Mais** les erreurs étaient silencieuses ! Les catch blocks ne loguaient pas les erreurs réelles de Supabase.
+### 2. Gallery - Erreur 500
+**Cause probable** : Même problème que services (FormData mal parsé)
+
+**Solution** : Ajout du header Content-Type dans `GalleryAdmin.tsx`
+
+### 3. About - Image ne s'affiche pas
+**Backend** : ✅ Insertion fonctionne
+**Frontend** : Route publique `/api/about/image` doit récupérer l'image
+
+**Solution** : Logs ajoutés pour diagnostiquer si l'image est bien récupérée
 
 ## Modifications apportées
 
-### 1. `/api/admin/images/route.ts` (Services Featured)
+### 1. `lib/apiClient.ts`
 
 **Avant :**
 ```typescript
-if (insertError) {
-  return NextResponse.json(
-    { success: false, error: 'Erreur création image' },
-    { status: 500 }
-  )
-}
-
-} catch (error) {
-  return NextResponse.json(
-    { success: false, error: 'Erreur serveur interne' },
-    { status: 500 }
-  )
-}
+const apiClient = axios.create({
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',  // ❌ Force JSON partout
+  },
+});
 ```
 
 **Après :**
 ```typescript
-// Log des données avant insert
-const insertData = { salon_id: salonId, service_id: serviceId, ... }
-console.log('[POST /api/admin/images] Inserting:', JSON.stringify(insertData, null, 2))
+const apiClient = axios.create({
+  withCredentials: true,
+  // Pas de header par défaut
+});
 
-if (insertError) {
-  console.error('[POST /api/admin/images] Insert error:', insertError)
-  return NextResponse.json(
-    { success: false, error: insertError.message || 'Erreur création image' },
-    { status: 500 }
-  )
-}
-
-} catch (error) {
-  console.error('[POST /api/admin/images] Unexpected error:', error)
-  return NextResponse.json(
-    { success: false, error: error instanceof Error ? error.message : 'Erreur serveur interne' },
-    { status: 500 }
-  )
-}
+// Intercepteur intelligent
+apiClient.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    // Supprimer Content-Type pour laisser le navigateur gérer
+    delete config.headers['Content-Type'];
+  } else {
+    // Forcer JSON pour les autres requêtes
+    config.headers['Content-Type'] = 'application/json';
+  }
+  return config;
+});
 ```
 
-### 2. `/api/admin/gallery/images/route.ts` (Gallery)
-
-**Changements identiques :**
-- ✅ Log des données avant insert (POST)
-- ✅ Log des erreurs Supabase avec `error.message`
-- ✅ Log des erreurs catch avec messages détaillés
-- ✅ Appliqué sur POST, PATCH, DELETE
-
-## Prochaines étapes
-
-1. **Déployer** en production
-2. **Tester** upload d'une image service et d'une image gallery
-3. **Vérifier les logs** Vercel :
-   - Si insertion réussit → Problem solved
-   - Si erreur → Les logs montreront exactement le problème (FK violation, contrainte, etc.)
-
-## Flux actuel (cohérent avec "about")
-
-### About Image (✅ fonctionne)
-1. Upload Storage → `/api/admin/upload-image`
-2. PATCH DB → `/api/admin/about/image` avec `{ imageUrl }`
-
-### Gallery Images (🔄 diagnostiqué)
-1. Upload Storage → `/api/admin/upload-image`
-2. POST DB → `/api/admin/gallery/images` avec `{ imageUrl, altText, serviceId }`
-
-### Services Featured (🔄 diagnostiqué)
-1. POST direct → `/api/admin/images` (upload + insert en une fois)
-
-## Architecture validée
+### 2. `app/components/admin/FeaturedServicesImagesAdmin.tsx`
 
 ```typescript
-// Toutes les routes utilisent ce pattern
-const { salonId, error: authError } = await verifyAdminAuth()
-if (authError) return authError
-
-// Insert avec salonId depuis session
-await supabaseAdmin.from('images').insert({
-  salon_id: salonId,  // ✅ depuis user.app_metadata.salon_id
-  type: 'gallery' | 'service_featured' | 'about',
-  image_url: publicUrl,
-  service_id: serviceId || null,
-  // ... autres champs
+const res = await apiClient.post('/api/admin/images', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },  // ✅ Explicite
 })
 ```
 
-## Notes importantes
+### 3. `app/components/admin/GalleryAdmin.tsx`
 
-- **SERVICE_ROLE_KEY** bypass les RLS → pas de problème de permissions
-- **salon_id** vient TOUJOURS de `user.app_metadata.salon_id` (pas hardcodé)
-- **Logs temporaires** seront nettoyés après diagnostic en production
-- **Schéma DB** validé : tous les champs requis sont envoyés
+```typescript
+// Upload initial
+const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+})
+
+// Remplacement image
+const uploadRes = await apiClient.post('/api/admin/upload-image', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+})
+```
+
+### 4. Routes API (logs détaillés conservés)
+
+- `/api/admin/images/route.ts` : Log avant insert + erreurs détaillées
+- `/api/admin/gallery/images/route.ts` : Log avant insert + erreurs détaillées  
+- `/api/about/image/route.ts` : Log pour diagnostiquer récupération publique
+
+## Tests à effectuer en production
+
+1. **Services Featured** :
+   - ✅ Tester upload d'une image de service
+   - ✅ Vérifier l'insertion en DB
+   - ✅ Vérifier l'affichage sur la page d'accueil
+
+2. **Gallery** :
+   - ✅ Tester upload d'une image de réalisation
+   - ✅ Vérifier l'insertion en DB
+   - ✅ Vérifier l'affichage dans la galerie publique
+
+3. **About** :
+   - ✅ Vérifier que l'image s'affiche sur la page d'accueil
+   - ✅ Consulter les logs pour voir si l'API publique récupère bien l'image
 
 ## Fichiers modifiés
 
-1. `app/api/admin/images/route.ts`
-2. `app/api/admin/gallery/images/route.ts`
+1. `lib/apiClient.ts` - Intercepteur FormData
+2. `app/components/admin/FeaturedServicesImagesAdmin.tsx` - Header Content-Type
+3. `app/components/admin/GalleryAdmin.tsx` - Header Content-Type (2 endroits)
+4. `app/api/admin/images/route.ts` - Logs détaillés
+5. `app/api/admin/gallery/images/route.ts` - Logs détaillés
+6. `app/api/about/image/route.ts` - Logs diagnostic
+
+## Prochaines étapes
+
+1. **Déployer** : `git push`
+2. **Tester** chaque type d'image (services, gallery, about)
+3. **Consulter logs** Vercel pour confirmer que tout fonctionne
+4. **Nettoyer** les console.log une fois validé
