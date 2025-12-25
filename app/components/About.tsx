@@ -1,42 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
-import axios from "axios";
-import salonConfig from "@/config/salon.config";
 import { slideInLeft, slideInRight, scrollRevealProps } from "@/lib/animations";
 
 export default function About() {
-  const [aboutImageUrl, setAboutImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchAboutImage() {
-      try {
-        const res = await axios.get(
-          `/api/about/image`
-        );
-
-        if (res.data.success && res.data.data?.imageUrl) {
-          setAboutImageUrl(res.data.data.imageUrl);
-        }
-      } catch (err) {
-        console.error("Erreur chargement image À propos:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAboutImage();
+    setLoading(false); // La vidéo est statique, donc pas besoin de faire un appel API
   }, []);
-
-  /**
-   * 🧠 LOGIQUE D’AFFICHAGE IMAGE
-   * 1. Image ajoutée par l’admin
-   * 2. Logo du salon (fallback propre)
-   */
-  const displayImage = aboutImageUrl || salonConfig.theme.images.logo;
 
   if (loading) {
     return (
@@ -51,22 +24,18 @@ export default function About() {
   return (
     <section id="about" className="py-20 px-6 bg-light text-dark">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-        {/* Image / Logo */}
+        {/* Vidéo */}
         <motion.div
           {...scrollRevealProps}
           variants={slideInLeft}
           className="relative w-full h-[400px] rounded-2xl overflow-hidden shadow-lg bg-white flex items-center justify-center"
         >
-          <Image
-            src={displayImage}
-            alt={`À propos du salon ${salonConfig.identity.name}`}
-            fill
-            className={
-              aboutImageUrl
-                ? "object-cover"
-                : "object-contain p-10"
-            }
-            priority
+          <video
+            src="/images/video-patricia.mp4" // Remplace par le nom de ta vidéo
+            className="object-cover w-full h-full"
+            autoPlay
+            loop
+            muted
           />
         </motion.div>
 
@@ -80,7 +49,7 @@ export default function About() {
           </h2>
 
           <p className="text-lg leading-relaxed mb-4">
-            {salonConfig.identity.longDescription}
+            Le Salon Patricia Osores à Liège vous accueille dans une atmosphère chaleureuse et authentique où chaque détail compte.
           </p>
 
           <p className="text-lg leading-relaxed">

@@ -1,5 +1,7 @@
+import { salonConfig } from "@/config/salon.config"
+
 export const metadata = {
-  title: 'Choisir un service - Salon Démo',
+  title: `Choisir un service - ${salonConfig.identity.shortName}`,
   description:
-    'Sélectionnez votre prestation au Salon Démo : coupe, couleur, balayage, soins capillaires. Réservation en ligne rapide et simple.',
+    `Sélectionnez votre prestation au salon ${salonConfig.identity.shortName} : coupe, couleur, balayage, soins capillaires. Réservation en ligne rapide et simple.`,
 }

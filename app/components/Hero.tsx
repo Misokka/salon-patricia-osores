@@ -37,10 +37,18 @@ export default function Hero() {
           initial="hidden"
           animate="visible"
           variants={fadeUp}
-          className="text-4xl sm:text-5xl lg:text-6xl font-brand font-bold leading-tight text-light mb-6"
+          className="text-4xl sm:text-5xl lg:text-6xl font-brand font-bold leading-tight text-light mb-2"
+        >
+          {salonConfig.identity.shortName} 
+        </motion.h1>
+        <motion.h2
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="text-3xl sm:text-3xl lg:text-4xl font-brand font-bold leading-tight text-light mb-6"
         >
           {salonConfig.identity.tagline}
-        </motion.h1>
+        </motion.h2>
 
         <motion.p
           initial="hidden"

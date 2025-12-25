@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import AdminContent from "./AdminContent";
+import salonConfig from "@/config/salon.config";
 
 export const metadata: Metadata = {
-  title: "Rendez-vous — Admin | Salon Démo",
+  title: `Rendez-vous — Admin | ${salonConfig.identity.shortName}`,
   description: "Interface d'administration pour gérer les demandes de rendez-vous.",
 };
 

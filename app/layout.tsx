@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     description: salonConfig.seo.description,
     url: salonConfig.seo.siteUrl,
     siteName: salonConfig.identity.name,
-    locale: salonConfig.seo.region === 'FR' ? 'fr_FR' : 'fr_BE',
+    locale: salonConfig.seo.region === 'BE' ? 'fr_BE' : 'fr_FR',
     type: 'website',
     images: [
       {

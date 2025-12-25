@@ -1,10 +1,23 @@
 # *
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /api/*
+Disallow: /rendezvous/confirmation
+Disallow: /rendezvous/reschedule/
+Crawl-delay: 1
 
-# Disallow admin pages
+# Googlebot
+User-agent: Googlebot
+Allow: /
 Disallow: /admin/
 Disallow: /api/
+Crawl-delay: 0.5
 
-# Sitemap
-Sitemap: {{SITE_URL}}/sitemap.xml
+# Host
+Host: https://salon-patricia-osores.be
+
+# Sitemaps
+Sitemap: https://salon-patricia-osores.be/sitemap.xml

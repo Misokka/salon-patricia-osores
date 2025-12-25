@@ -89,7 +89,7 @@ export const generateOpenGraphTags = (customTitle?: string, customDescription?: 
   url: salonConfig.seo.siteUrl,
   siteName: salonConfig.identity.name,
   image: customImage || salonConfig.theme.images.ogImage,
-  locale: salonConfig.seo.region === 'FR' ? 'fr_FR' : 'fr_BE',
+  locale: salonConfig.seo.region === 'BE' ? 'fr_BE' : 'fr_FR',
   type: 'website',
 })
 

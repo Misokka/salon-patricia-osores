@@ -13,48 +13,47 @@ export const salonConfig = {
    🏢 IDENTITÉ DU SALON
   ---------------------------------------- */
   identity: {
-    name: "Salon Démo",
-    shortName: "Salon Démo",
-    ownerName: "Jeremy Caron",
-    city: "Chantilly",
-    country: "France",
-    countryCode: "FR",
-    tagline: "Salon de démo — Coiffure",
+    name: "Salon Patricia Osores",
+    shortName: "Salon Patricia Osores",
+    ownerName: "Patricia Osores",
+    city: "Liège",
+    country: "Belgique",
+    countryCode: "BE",
+    tagline: "Coiffure personnalisée et créative",
     description:
-      "Salon Démo est un site de démonstration présentant une solution moderne de prise de rendez-vous pour salons de coiffure et d’esthétique.",
+      "Salon de coiffure Patricia Osores à Liège. Vous y trouverez un service personnalisé dans une ambiance chaleureuse et accueillante. Patricia met son savoir-faire au service de votre beauté.",
     longDescription:
-      "Ce salon de démonstration a été conçu pour illustrer l’ensemble des fonctionnalités d’un site professionnel de réservation en ligne, pensé pour les salons de services.",
+      "Le salon de Patricia Osores à Liège vous propose une expérience unique de coiffure, dans une ambiance qui reflète l'harmonie et le soin du détail.",
   },
+
 
   /* ----------------------------------------
    📍 CONTACT & LOCALISATION
   ---------------------------------------- */
   contact: {
-    email: "contact@jeremy-caron-labalette.fr",
-    phone: "+33 6 19 51 50 86",
-    phoneDisplay: "+33 6 19 51 50 86",
-    phoneLink: "+33619515086",
-
+    email: "paty10j@hotmail.com",
+    phone: "+32 496 71 41 15",
+    phoneDisplay: "+32 496 71 41 15",
+    phoneLink: "+32496714115",
     address: {
-      street: "Centre-ville",
-      city: "Chantilly",
-      postalCode: "60500",
-      region: "Oise",
-      country: "France",
-      countryCode: "FR",
-      full: "Chantilly, 60500, Oise, France",
+      street: "Place République Française 34",
+      city: "Liège",
+      postalCode: "",
+      region: "Liège",
+      country: "Belgique",
+      countryCode: "BE",
+      full: "Place République Française 34, Liège, Belgique",
     },
-
     coordinates: {
-      latitude: 49.1946,
-      longitude: 2.4712,
+      latitude: 50.645,
+      longitude: 5.573,
     },
-
     social: {
-      instagram: "",
-      facebook: "",
+      instagram: "https://www.instagram.com/salon.de.coiffure.po/", 
+      facebook: "https://www.facebook.com/p/Salon-de-coiffure-Patricia-Osores-100083957112347/",  
     },
   },
+
 
   /* ----------------------------------------
    🎨 THÈME VISUEL
@@ -64,7 +63,7 @@ export const salonConfig = {
 
     images: {
       logo: "/images/logo.png",
-      hero: "/images/landing.jpg",
+      hero: "/images/landing1.jpg",
       ogImage: "/images/og-demo.jpg",
     },
   },
@@ -73,27 +72,28 @@ export const salonConfig = {
    🌐 SEO
   ---------------------------------------- */
   seo: {
-    siteUrl: "https://demo.jeremy-caron-labalette.fr",
+    siteUrl: "https://salon-patricia-osores.be",
     siteUrlDev: "http://localhost:3000",
-    title: "Salon Démo — Prise de rendez-vous en ligne",
-    titleShort: "Salon Démo",
+    title: "Salon Patricia Osores — Coiffure à Liège",
+    titleShort: "Salon Patricia",
     description:
-      "Site de démonstration d’un salon avec prise de rendez-vous en ligne, conçu par Jeremy Caron.",
+      "Le Salon Patricia Osores vous propose des coupes et des services de coiffure personnalisés à Liège.",
     keywords: [
-      "site salon de coiffure",
-      "prise de rendez-vous en ligne",
-      "site de démonstration",
-      "réservation salon",
+      "coiffure Liège",
+      "salon de coiffure Liège",
+      "coiffure Patricia",
+      "salon coiffure",
     ],
     lang: "fr",
-    region: "FR",
+    region: "BE",
   },
+
 
   /* ----------------------------------------
    ⭐ GOOGLE
   ---------------------------------------- */
   google: {
-    businessUrl: "",
+    businessUrl: "https://share.google/ccVClhR5sOl4jNFos",
     reviewUrl: "",
   },
 
@@ -112,28 +112,28 @@ export const salonConfig = {
    📧 EMAILS
   ---------------------------------------- */
   emails: {
-    from: "contact@jeremy-caron-labalette.fr",
-    fromName: "Salon Démo",
-    replyTo: "contact@jeremy-caron-labalette.fr",
+    from: "contact@salon-patricia-osores.be",
+    fromName: "Salon Patricia Osores",
+    replyTo: "paty10j@hotmail.com",
 
     subjects: {
-      newBooking: "[DEMO] Nouvelle demande de rendez-vous — {{clientName}}",
-      clientConfirmation:
-        "[DEMO] Demande de rendez-vous reçue",
-      bookingAccepted: "[DEMO] Votre rendez-vous est confirmé",
-      bookingRejected: "[DEMO] Modification de votre rendez-vous",
-      reviewRequest: "[DEMO] Votre avis compte pour nous",
+      newBooking: "[Salon Patricia] Nouvelle demande de rendez-vous — {{clientName}}",
+      clientConfirmation: "[Salon Patricia] Confirmation de rendez-vous",
+      bookingAccepted: "[Salon Patricia] Votre rendez-vous est confirmé",
+      bookingRejected: "[Salon Patricia] Votre rendez-vous a été modifié",
+      reviewRequest: "[Salon Patricia] Votre avis est important",
     },
 
     reviewRequestDelayHours: 2,
     cronHour: 20,
   },
 
+
   /* ----------------------------------------
    📅 HORAIRES
   ---------------------------------------- */
   schedule: {
-    timezone: "Europe/Paris",
+    timezone: "Europe/Brussels",
 
     weekly: {
       monday: { open: "09:00", close: "18:00", closed: false },
@@ -153,18 +153,18 @@ export const salonConfig = {
   /* ----------------------------------------
    ⚖️ LÉGAL
   ---------------------------------------- */
-  legal: {
-    vatNumber: "FR0000000000",
-    businessType: "Site de démonstration",
-    foundedYear: 2024,
-  },
+  // legal: {
+  //   vatNumber: "FR0000000000",
+  //   businessType: "Site de démonstration",
+  //   foundedYear: 2024,
+  // },
 
   /* ----------------------------------------
    🌍 LOCALISATION
   ---------------------------------------- */
   localization: {
-    defaultLocale: "fr",
-    supportedLocales: ["fr"],
+    defaultLocale: "be",
+    supportedLocales: ["be"],
     currency: "EUR",
     currencySymbol: "€",
     dateFormat: "dd/MM/yyyy",

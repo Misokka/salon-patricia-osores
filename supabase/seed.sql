@@ -27,8 +27,8 @@ CASCADE;
 INSERT INTO salons (id, name, slug, is_active)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
-  'Salon Démo',
-  'salon-demo',
+  'Salon Patricia Osores',
+  'salon-patricia-osores',
   true
 );
 

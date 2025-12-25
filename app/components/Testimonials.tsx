@@ -107,7 +107,7 @@ export default function Testimonials() {
     <section id="avis" className="py-20 bg-light text-dark">
       <div className="max-w-6xl mx-auto px-6">
         <h3 className="text-4xl font-brand font-bold mb-12 text-center">
-          Ce que disent mes clientes
+          Ce que disent mes clients
         </h3>
 
         <div className="relative px-4 md:px-16">

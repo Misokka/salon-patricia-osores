@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+import { salonConfig } from '@/config/salon.config'
 
 interface Disponibilite {
   id: string
@@ -138,7 +139,7 @@ export default function ChoixDateHeurePage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-4xl font-brand text-dark">
-            Réserver en ligne chez Salon Démo
+            Réserver en ligne chez {salonConfig.identity.shortName} 
           </h1>
           <p className="text-gray-600 mt-1">
             Étape 2 sur 3 – Choix de la date et de l'heure

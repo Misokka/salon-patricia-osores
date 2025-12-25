@@ -161,7 +161,6 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
             isCollapsed={isCollapsed}
             defaultOpen={pathname.startsWith('/admin/images')}
             items={[
-              { label: 'Image À propos', href: '/admin/images/about', isActive: pathname === '/admin/images/about' },
               { label: 'Galerie des réalisations', href: '/admin/images/galerie', isActive: pathname === '/admin/images/galerie' },
             ]}
           />

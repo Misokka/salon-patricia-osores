@@ -7,6 +7,7 @@ import { usePublicSchedule } from '@/lib/hooks/usePublicSchedule'
 
 import type { Service, ServiceCategoryWithServices } from '@/types/service'
 import type { ServiceSelection } from '@/types/service-selection'
+import salonConfig from '@/config/salon.config'
 
 interface Category {
   id: string
@@ -74,7 +75,7 @@ export default function ServicesPage() {
         {/* En-tête */}
         <div className="mb-8">
           <h1 className="text-4xl font-brand font-normal mb-2 text-dark">
-            Réserver en ligne chez Salon Démo
+            Réserver en ligne chez {salonConfig.identity.shortName} 
           </h1>
           <p className="text-gray-600">
             24h/24 - Gratuitement - Paiement sur place - Confirmation immédiate

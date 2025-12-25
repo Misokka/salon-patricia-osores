@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import CreateAppointmentForm from "../../../components/admin/CreateAppointmentForm";
+import salonConfig from "@/config/salon.config";
 
 export const metadata: Metadata = {
-  title: "Nouveau rendez-vous — Admin | Salon Démo",
+  title: `Nouveau rendez-vous — Admin | ${salonConfig.identity.shortName}`,
   description: "Créer un rendez-vous manuellement pour un client.",
 };
 
