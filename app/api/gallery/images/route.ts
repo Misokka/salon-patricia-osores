@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { PUBLIC_SALON_ID } from '@/lib/salonContext'
 
 const IMAGE_TYPE = 'gallery'
 
@@ -22,6 +23,7 @@ export async function GET() {
           name
         )
       `)
+      .eq('salon_id', PUBLIC_SALON_ID)
       .eq('type', IMAGE_TYPE)
       .is('deleted_at', null)
       .is('is_visible', true)

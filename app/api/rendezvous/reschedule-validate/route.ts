@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendRescheduleConfirmationEmail, sendRescheduleCancelledEmail, sendRescheduleAcceptedToAdmin } from '@/lib/emailService'
 import salonConfig from '@/config/salon.config'
+import { PUBLIC_SALON_ID } from '@/lib/salonContext'
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     const { data: rdv, error: fetchError } = await supabaseAdmin
       .from('appointments')
       .select('*')
+      .eq('salon_id', PUBLIC_SALON_ID)
       .eq('id', id)
       .single()
 
@@ -68,6 +70,7 @@ export async function POST(req: NextRequest) {
       const { data: serviceData } = await supabaseAdmin
         .from('services')
         .select('name')
+        .eq('salon_id', PUBLIC_SALON_ID)
         .eq('id', rdv.service_id)
         .single()
 
@@ -121,6 +124,7 @@ export async function POST(req: NextRequest) {
       const { data: serviceData } = await supabaseAdmin
         .from('services')
         .select('name')
+        .eq('salon_id', PUBLIC_SALON_ID)
         .eq('id', rdv.service_id)
         .single()
 

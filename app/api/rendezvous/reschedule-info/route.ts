@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { format, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { PUBLIC_SALON_ID } from '@/lib/salonContext'
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
     const { data: rdv, error } = await supabase
       .from('appointments')
       .select('*')
+      .eq('salon_id', PUBLIC_SALON_ID)
       .eq('id', rdvId)
       .single()
 
@@ -51,6 +53,7 @@ export async function GET(req: NextRequest) {
     const { data: serviceData } = await supabase
       .from('services')
       .select('name')
+      .eq('salon_id', PUBLIC_SALON_ID)
       .eq('id', rdv.service_id)
       .single()
 

@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     let query = getSupabase()
       .from('time_slots')
       .select('*')
+      .eq('salon_id', PUBLIC_SALON_ID)
       .order('slot_date', { ascending: true })
       .order('start_time', { ascending: true })
 
