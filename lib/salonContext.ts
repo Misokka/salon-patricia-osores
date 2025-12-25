@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server'
  * UUID du salon pour les routes publiques (non authentifiées)
  * TODO: En mode multi-salon, remplacer par une détection par domaine/slug
  */
-export const PUBLIC_SALON_ID = 'e0b7b419-a22b-4c2c-8355-2f4af30fe1c2'
+export const PUBLIC_SALON_ID = '00000000-0000-0000-0000-000000000001'
 
 /**
  * Récupère le salon_id depuis la session utilisateur authentifié
