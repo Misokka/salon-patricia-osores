@@ -270,7 +270,7 @@ export default function HorairesAdmin() {
   }
 
   // Dupliquer les horaires vers un autre jour
-  const handleDuplicateDay = async (sourceDayOfWeek: number, targetDayOfWeek: number) => {
+  const handleDuplicateDay = async (sourceDayOfWeek: number, targetDayOfWeek: number, generationEndDate: string) => {
     try {
       const sourceRanges = getTimeRangesForDay(sourceDayOfWeek)
       
@@ -289,9 +289,6 @@ export default function HorairesAdmin() {
             start_time: range.start_time,
             end_time: range.end_time,
             slot_frequency_minutes: range.slot_frequency_minutes,
-            // Copier la période de génération du jour source
-            generation_start_date: (range as any).generation_start_date || null,
-            generation_end_date: (range as any).generation_end_date || null,
           },
         })
         if (res.data.success) {
@@ -299,18 +296,14 @@ export default function HorairesAdmin() {
         }
       }
 
-      // Générer les créneaux pour chaque plage dupliquée (utiliser la période source ou 2 semaines par défaut)
+      // Générer les créneaux pour chaque plage dupliquée avec la période choisie
       const today = format(new Date(), 'yyyy-MM-dd')
-      const firstSourceRange = sourceRanges[0] as any
-      const endDate = firstSourceRange.generation_end_date 
-        ? firstSourceRange.generation_end_date 
-        : format(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
       let totalGeneratedSlots = 0
       for (const range of createdRanges) {
         const genRes = await apiClient.post(`/api/admin/horaires/generate-slots`, {
           start_date: today,
-          end_date: endDate,
+          end_date: generationEndDate,
           day_of_week: targetDayOfWeek,
           start_time: range.start_time,
           end_time: range.end_time,
@@ -623,16 +616,41 @@ function DuplicateDayModal({
 }: {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (source: number, target: number) => void
+  onConfirm: (source: number, target: number, generationEndDate: string) => void
   sourceDayOfWeek: number
   sourceDayLabel: string
   availableDays: Array<{ value: number; label: string; disabled: boolean }>
 }) {
   const [targetDay, setTargetDay] = useState<number | null>(null)
+  const [generationDuration, setGenerationDuration] = useState('2_weeks')
+  const [customEndDate, setCustomEndDate] = useState('')
+
+  const getEndDate = () => {
+    const today = new Date()
+    switch (generationDuration) {
+      case '1_week':
+        return format(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+      case '2_weeks':
+        return format(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+      case '1_month':
+        return format(new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+      case '3_months':
+        return format(new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+      case 'custom':
+        return customEndDate
+      default:
+        return format(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+    }
+  }
 
   const handleConfirm = () => {
     if (targetDay !== null) {
-      onConfirm(sourceDayOfWeek, targetDay)
+      const endDate = getEndDate()
+      if (!endDate) {
+        alert('Veuillez sélectionner une date de fin')
+        return
+      }
+      onConfirm(sourceDayOfWeek, targetDay, endDate)
     }
   }
 
@@ -672,7 +690,7 @@ function DuplicateDayModal({
                     Copier les plages horaires du <strong>{sourceDayLabel}</strong> vers :
                   </p>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-4">
                     {availableDays.map((day) => (
                       <button
                         key={day.value}
@@ -699,7 +717,34 @@ function DuplicateDayModal({
                     ))}
                   </div>
 
-                  <div className="mt-4 sm:mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                      Période de génération des créneaux
+                    </label>
+                    <select
+                      value={generationDuration}
+                      onChange={(e) => setGenerationDuration(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="1_week">1 semaine</option>
+                      <option value="2_weeks">2 semaines</option>
+                      <option value="1_month">1 mois</option>
+                      <option value="3_months">3 mois</option>
+                      <option value="custom">Personnalisée</option>
+                    </select>
+                    {generationDuration === 'custom' && (
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                      />
+                    )}
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <p className="text-xs text-yellow-900">
                       ⚠️ <strong>Attention :</strong> Les plages horaires existantes du jour cible seront conservées.
                       Les nouvelles plages seront ajoutées.

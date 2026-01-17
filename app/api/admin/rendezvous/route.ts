@@ -150,7 +150,7 @@ export async function PATCH(request: Request) {
     }
 
     // Si le rendez-vous est annulé, libérer les créneaux associés
-    if (newStatus === 'cancelled') {
+    if (newStatus === 'cancelled' || newStatus === 'refused') {
       const { data: slots, error: slotsError } = await supabaseAdmin
         .from('appointment_slots')
         .select('time_slot_id')
@@ -161,6 +161,7 @@ export async function PATCH(request: Request) {
         await supabaseAdmin
           .from('time_slots')
           .update({ is_available: true })
+          .eq('salon_id', salonId)
           .in('id', slotIds)
         
       }

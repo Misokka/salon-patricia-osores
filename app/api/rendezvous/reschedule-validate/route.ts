@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendRescheduleConfirmationEmail, sendRescheduleCancelledEmail, sendRescheduleAcceptedToAdmin } from '@/lib/emailService'
 import salonConfig from '@/config/salon.config'
-import { PUBLIC_SALON_ID } from '@/lib/salonContext'
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const { data: rdv, error: fetchError } = await supabaseAdmin
       .from('appointments')
       .select('*')
-      .eq('salon_id', PUBLIC_SALON_ID)
       .eq('id', id)
       .single()
 
@@ -70,7 +69,6 @@ export async function POST(req: NextRequest) {
       const { data: serviceData } = await supabaseAdmin
         .from('services')
         .select('name')
-        .eq('salon_id', PUBLIC_SALON_ID)
         .eq('id', rdv.service_id)
         .single()
 
@@ -120,11 +118,26 @@ export async function POST(req: NextRequest) {
         )
       }
 
+      // Libérer les créneaux associés au rendez-vous refusé
+      const { data: slots, error: slotsError } = await supabaseAdmin
+        .from('appointment_slots')
+        .select('time_slot_id')
+        .eq('appointment_id', id)
+
+      if (!slotsError && slots && slots.length > 0) {
+        const slotIds = slots.map(s => s.time_slot_id)
+        await supabaseAdmin
+          .from('time_slots')
+          .update({ is_available: true })
+          .eq('salon_id', rdv.salon_id)
+          .in('id', slotIds)
+        
+      }
+
       // Récupérer le nom du service pour l'email
       const { data: serviceData } = await supabaseAdmin
         .from('services')
         .select('name')
-        .eq('salon_id', PUBLIC_SALON_ID)
         .eq('id', rdv.service_id)
         .single()
 

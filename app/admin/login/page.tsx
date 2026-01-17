@@ -45,7 +45,7 @@ function AdminLoginForm() {
         return
       }
 
-      const redirectTo = searchParams.get('redirect') || '/admin/rendezvous'
+      const redirectTo = searchParams.get('redirect') || '/admin'
       router.push(redirectTo)
       router.refresh()
     } catch (err) {

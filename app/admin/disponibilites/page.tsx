@@ -118,8 +118,15 @@ export default function AdminDisponibilitesPage() {
   }
 
   const handleDeleteSlot = async (id: string) => {
-    await axios.delete(`/api/admin/time-slots/${id}`)
-    setTimeSlots(prev => prev.filter(s => s.id !== id))
+    try {
+      const response = await axios.delete(`/api/admin/time-slots/${id}`)
+      
+      if (response.data.success) {
+        setTimeSlots(prev => prev.filter(s => s.id !== id))
+      }
+    } catch (error: any) {
+      console.error('Erreur suppression créneau:', error)
+    }
   }
 
   /* ----------------------------------------

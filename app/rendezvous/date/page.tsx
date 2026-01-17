@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { salonConfig } from '@/config/salon.config'
 
 interface Disponibilite {
   id: string
@@ -108,6 +107,27 @@ export default function ChoixDateHeurePage() {
   const getCreneauxPourDate = (date: string) =>
     disponibilites.filter((d) => d.date === date)
 
+  const getMonthYearLabel = () => {
+    if (jours.length === 0) return ''
+    
+    // Prendre le premier et dernier jour de la semaine affichée
+    const firstDate = new Date(jours[0] + 'T00:00:00')
+    const lastDate = new Date(jours[jours.length - 1] + 'T00:00:00')
+    
+    const firstMonth = firstDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    const lastMonth = lastDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    
+    // Si même mois/année, afficher une seule fois
+    if (firstMonth === lastMonth) {
+      return firstMonth.charAt(0).toUpperCase() + firstMonth.slice(1)
+    }
+    
+    // Si mois différents, afficher la plage
+    const firstMonthShort = firstDate.toLocaleDateString('fr-FR', { month: 'long' })
+    const lastMonthFull = lastDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    return `${firstMonthShort.charAt(0).toUpperCase() + firstMonthShort.slice(1)} - ${lastMonthFull.charAt(0).toUpperCase() + lastMonthFull.slice(1)}`
+  }
+
   const handleSelectCreneau = (
     date: string,
     heure: string,
@@ -139,7 +159,7 @@ export default function ChoixDateHeurePage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-4xl font-brand text-dark">
-            Réserver en ligne chez {salonConfig.identity.shortName} 
+            Réserver en ligne chez Salon Démo
           </h1>
           <p className="text-gray-600 mt-1">
             Étape 2 sur 3 – Choix de la date et de l'heure
@@ -175,36 +195,47 @@ export default function ChoixDateHeurePage() {
             </p>
           ) : (
             <>
-              {/* Navigation semaine */}
-              <div className="flex justify-between items-center bg-gray-50 p-3 rounded">
-                <button
-                  disabled={weekOffset === 0}
-                  onClick={() => {
-                    setWeekOffset((w) => Math.max(0, w - 1))
-                    setCreneauSelectionne(null)
-                  }}
-                  className="btn-secondary disabled:opacity-40"
-                >
-                  ← Semaine précédente
-                </button>
+              {/* Affichage mois/année */}
+              <div className="text-center">
+                <p className="text-xl font-semibold text-primary">
+                  {getMonthYearLabel()}
+                </p>
+              </div>
 
-                <span className="font-semibold">
+              {/* Navigation semaine */}
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+                <div className="text-sm font-semibold text-gray-800 text-center sm:text-left">
                   {weekOffset === 0
                     ? 'Cette semaine'
                     : `Dans ${weekOffset} semaine${
                         weekOffset > 1 ? 's' : ''
                       }`}
-                </span>
+                </div>
 
-                <button
-                  onClick={() => {
-                    setWeekOffset((w) => w + 1)
-                    setCreneauSelectionne(null)
-                  }}
-                  className="btn-secondary"
-                >
-                  Semaine suivante →
-                </button>
+                <div className="flex items-center justify-between sm:justify-end gap-2">
+                  <button
+                    disabled={weekOffset === 0}
+                    onClick={() => {
+                      setWeekOffset((w) => Math.max(0, w - 1))
+                      setCreneauSelectionne(null)
+                    }}
+                    className="flex items-center gap-1 px-3 py-2 text-sm rounded-md bg-white border hover:bg-gray-100 disabled:opacity-40"
+                  >
+                    <span className="hidden sm:inline">← Semaine précédente</span>
+                    <span className="sm:hidden">← Précédente</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setWeekOffset((w) => w + 1)
+                      setCreneauSelectionne(null)
+                    }}
+                    className="flex items-center gap-1 px-3 py-2 text-sm rounded-md bg-white border hover:bg-gray-100"
+                  >
+                    <span className="hidden sm:inline">Semaine suivante →</span>
+                    <span className="sm:hidden">Suivante →</span>
+                  </button>
+                </div>
               </div>
 
               {/* 📱 MOBILE – accordion */}

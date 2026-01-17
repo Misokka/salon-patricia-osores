@@ -20,10 +20,12 @@ export async function GET(request: Request) {
     const dateFin = searchParams.get('dateFin')
     const disponibleUniquement = searchParams.get('disponibleUniquement') === 'true'
 
+    const salonId = PUBLIC_SALON_ID
+
     let query = getSupabase()
       .from('time_slots')
       .select('*')
-      .eq('salon_id', PUBLIC_SALON_ID)
+      .eq('salon_id', salonId)
       .order('slot_date', { ascending: true })
       .order('start_time', { ascending: true })
 
@@ -49,7 +51,6 @@ export async function GET(request: Request) {
       )
     }
 
-    const salonId = PUBLIC_SALON_ID
 
     // Récupérer les jours fermés
     const { data: closedDays } = await getSupabase()
@@ -134,10 +135,13 @@ export async function POST(request: Request) {
       )
     }
 
-    // Vérifier si le créneau existe déjà
+    const salonId = PUBLIC_SALON_ID
+
+    // Vérifier si le créneau existe déjà pour CE salon
     const { data: existing } = await getSupabase()
       .from('time_slots')
       .select('id')
+      .eq('salon_id', salonId)
       .eq('slot_date', date)
       .eq('start_time', heure)
       .single()
@@ -152,7 +156,12 @@ export async function POST(request: Request) {
     // Insérer le nouveau créneau
     const { data, error } = await getSupabase()
       .from('time_slots')
-      .insert([{ slot_date: date, start_time: heure, is_available: est_disponible }])
+      .insert([{ 
+        salon_id: salonId,
+        slot_date: date, 
+        start_time: heure, 
+        is_available: est_disponible 
+      }])
       .select()
       .single()
 
@@ -185,10 +194,13 @@ export async function DELETE(request: Request) {
       )
     }
 
+    const salonId = PUBLIC_SALON_ID
+
     const { error } = await getSupabase()
       .from('time_slots')
       .delete()
       .eq('id', id)
+      .eq('salon_id', salonId)
 
     if (error) {
       return NextResponse.json(
@@ -219,10 +231,13 @@ export async function PATCH(request: Request) {
       )
     }
 
+    const salonId = PUBLIC_SALON_ID
+
     const { data, error } = await getSupabase()
       .from('time_slots')
       .update({ is_available: est_disponible })
       .eq('id', id)
+      .eq('salon_id', salonId)
       .select()
       .single()
 

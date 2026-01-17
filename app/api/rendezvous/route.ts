@@ -49,9 +49,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log(`🔒 Tentative de réservation : ${required_slot_ids.length} créneaux pour "${service}"`)
-
-    // 🔒 VALIDATION STRICTE : Vérifier que les créneaux correspondent exactement au service
     const validation = await validateAppointmentSlots(
       supabaseAdmin,
       service_id,
@@ -74,8 +71,8 @@ export async function POST(request: Request) {
     // Vérifier atomiquement que TOUS les créneaux requis sont disponibles
     const { data: slotsToCheck, error: checkError } = await supabaseAdmin
       .from('time_slots')
-      .select('id, start_time, is_available')
-      .eq('salon_id', PUBLIC_SALON_ID)
+      .select('id, start_time, is_available, salon_id')
+      .eq('salon_id', salonId)
       .in('id', required_slot_ids)
 
     if (checkError) {
@@ -141,7 +138,7 @@ export async function POST(request: Request) {
     const { error: updateError } = await supabaseAdmin
       .from('time_slots')
       .update({ is_available: false })
-      .eq('salon_id', PUBLIC_SALON_ID)
+      .eq('salon_id', salonId)
       .in('id', required_slot_ids)
 
     if (updateError) {
@@ -170,7 +167,6 @@ export async function POST(request: Request) {
       await supabaseAdmin
         .from('time_slots')
         .update({ is_available: true })
-        .eq('salon_id', PUBLIC_SALON_ID)
         .in('id', required_slot_ids)
       return NextResponse.json(
         { success: false, error: 'Erreur lors de la liaison des créneaux' },
@@ -183,7 +179,6 @@ export async function POST(request: Request) {
     const { data: serviceData, error: serviceError } = await supabaseAdmin
       .from('services')
       .select('name')
-      .eq('salon_id', PUBLIC_SALON_ID)
       .eq('id', service_id)
       .single()
 

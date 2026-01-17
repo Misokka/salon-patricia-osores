@@ -117,10 +117,28 @@ export async function POST(request: Request) {
         .eq('status', 'accepted')
 
       if (appointments?.length) {
+        const appointmentIds = appointments.map(a => a.id)
+        
+        // Libérer les créneaux associés aux rendez-vous annulés
+        const { data: slotsToFree } = await supabaseAdmin
+          .from('appointment_slots')
+          .select('time_slot_id')
+          .in('appointment_id', appointmentIds)
+
+        if (slotsToFree && slotsToFree.length > 0) {
+          const slotIds = slotsToFree.map(s => s.time_slot_id)
+          await supabaseAdmin
+            .from('time_slots')
+            .update({ is_available: true })
+            .in('id', slotIds)
+          
+        }
+
+        // Annuler les rendez-vous
         await supabaseAdmin
           .from('appointments')
           .update({ status: 'cancelled' })
-          .in('id', appointments.map(a => a.id))
+          .in('id', appointmentIds)
       }
 
       const { data: slots } = await supabaseAdmin
