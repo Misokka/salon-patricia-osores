@@ -5,6 +5,47 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, format } from 'date-fns'
+import { salonConfig } from '@/config/salon.config'
+
+/**
+ * Convertit une date+heure locale (du salon) en Date UTC
+ * Nécessaire car BDD stocke DATE + TIME sans timezone
+ * @param dateStr Format: YYYY-MM-DD
+ * @param timeStr Format: HH:mm:ss
+ * @returns Date object en UTC représentant l'heure locale du salon
+ */
+function parseLocalDateTime(dateStr: string, timeStr: string): Date {
+  // Extraire composants temporels
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  
+  // Créer date locale dans la timezone du salon (Europe/Brussels = UTC+1/+2)
+  // On utilise le format ISO avec offset pour forcer l'interprétation
+  const salonTz = salonConfig.schedule.timezone // "Europe/Brussels"
+  
+  // Créer un formatteur pour obtenir l'offset de la timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: salonTz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZoneName: 'longOffset'
+  })
+  
+  // Créer une date arbitraire dans la timezone du salon pour obtenir l'offset
+  const sampleDate = new Date(year, month - 1, day, hours, minutes, 0)
+  const parts = formatter.formatToParts(sampleDate)
+  const offset = parts.find(p => p.type === 'timeZoneName')?.value || 'GMT+01:00'
+  
+  // Construire l'ISO string avec l'offset correct
+  const isoWithOffset = `${dateStr}T${timeStr.substring(0, 5)}:00${offset.replace('GMT', '')}`
+  
+  return new Date(isoWithOffset)
+}
 
 /**
  * GET - Récupère les rendez-vous pour l'agenda admin
@@ -51,6 +92,7 @@ export async function GET(request: Request) {
     let query = supabaseAdmin
       .from('appointments')
       .select('*')
+      .eq('salon_id', salonId)
       .gte('appointment_date', format(startDate, 'yyyy-MM-dd'))
       .lte('appointment_date', format(endDate, 'yyyy-MM-dd'))
       .order('appointment_date', { ascending: true })
@@ -95,8 +137,10 @@ export async function GET(request: Request) {
     const formattedData = appointments?.map(rdv => {
       const service = rdv.service_id ? servicesMap[rdv.service_id] : null
       
-      // Construire start_time et end_time à partir de appointment_date + start_time
-      const startDateTime = new Date(`${rdv.appointment_date}T${rdv.start_time}`)
+      // FIX TIMEZONE: Parser avec timezone explicite (Europe/Brussels)
+      // BDD stocke DATE + TIME sans timezone → parsing avec timezone du salon
+      // Évite le décalage +1h en prod (Vercel UTC) vs local (Europe/Paris)
+      const startDateTime = parseLocalDateTime(rdv.appointment_date, rdv.start_time)
       const duration = service?.duration_minutes || 60 // Durée par défaut 60min
       const endDateTime = new Date(startDateTime.getTime() + duration * 60000)
       
