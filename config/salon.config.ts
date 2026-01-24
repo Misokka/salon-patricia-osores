@@ -101,7 +101,7 @@ export const salonConfig = {
    👤 ADMIN
   ---------------------------------------- */
   admin: {
-    email: "paty10j@hotmail.com",
+    email: "contact@jeremy-caron-labalette.fr",
     name: "Patricia",
     fullName: "Patricia Osores",
     salon: "Salon Patricia Osores",
