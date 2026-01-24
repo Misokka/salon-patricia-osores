@@ -113,8 +113,11 @@ export async function GET(request: Request) {
       )
     }
 
-    // Récupérer les IDs de services uniques
+   // Récupérer les IDs de services uniques
     const serviceIds = [...new Set(appointments?.map(apt => apt.service_id).filter(Boolean))]
+    
+    // Step 7: Récupérer les IDs de staff uniques
+    const staffIds = [...new Set(appointments?.map(apt => apt.staff_member_id).filter(Boolean))]
         
     // Récupérer les services correspondants par ID
     let servicesMap: Record<string, any> = {}
@@ -131,11 +134,28 @@ export async function GET(request: Request) {
         }, {} as Record<string, any>)
       }
     }
+
+    // Step 7: Récupérer les staff members par ID
+    let staffMap: Record<string, any> = {}
+    if (staffIds.length > 0) {
+      const { data: staffMembers, error: staffError } = await supabaseAdmin
+        .from('staff_members')
+        .select('id, name')
+        .in('id', staffIds)
+
+      if (!staffError && staffMembers) {
+        staffMap = staffMembers.reduce((acc, staff) => {
+          acc[staff.id] = staff
+          return acc
+        }, {} as Record<string, any>)
+      }
+    }
     
 
     // Formater les données pour le front
     const formattedData = appointments?.map(rdv => {
       const service = rdv.service_id ? servicesMap[rdv.service_id] : null
+      const staff = rdv.staff_member_id ? staffMap[rdv.staff_member_id] : null
       
       // FIX TIMEZONE: Parser avec timezone explicite (Europe/Brussels)
       // BDD stocke DATE + TIME sans timezone → parsing avec timezone du salon
@@ -157,7 +177,13 @@ export async function GET(request: Request) {
         service_name: service?.name || 'Service inconnu',
         service_duration: service?.duration_minutes || 60,
         service_price: service?.price_value || 0,
-        collaborator_name: 'Non assigné',
+        // Step 7: Staff info
+        staff_member_id: rdv.staff_member_id || null,
+        staff_member_name: staff?.name || null,
+        collaborator_name: staff?.name || 'Non assigné', // Rétrocompatibilité
+        // Proposition de modification (pour validation client)
+        proposed_date: rdv.proposed_date || null,
+        proposed_start_time: rdv.proposed_start_time || null,
       }
     }) || []
 

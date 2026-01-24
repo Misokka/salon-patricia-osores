@@ -11,6 +11,7 @@ interface CreneauSelectionne {
   date: string
   heure: string
   required_slots?: Array<{ id: string; heure: string }>
+  staff_member_id?: string | null  // Step 6 : coiffeur choisi
 }
 
 export default function ConfirmationPage() {
@@ -19,6 +20,8 @@ export default function ConfirmationPage() {
   // États pour les données précédentes
   const [serviceSelectionne, setServiceSelectionne] = useState<ServiceSelection | null>(null)
   const [creneauSelectionne, setCreneauSelectionne] = useState<CreneauSelectionne | null>(null)
+  const [isModifying, setIsModifying] = useState(false)
+  const [modifyData, setModifyData] = useState<any>(null)
   
   // États pour le formulaire
   const [formData, setFormData] = useState({
@@ -34,6 +37,14 @@ export default function ConfirmationPage() {
 
   // Récupérer les données depuis localStorage
   useEffect(() => {
+    // Vérifier si c'est une modification
+    const modifyStr = sessionStorage.getItem('modifyAppointment')
+    if (modifyStr) {
+      const data = JSON.parse(modifyStr)
+      setIsModifying(true)
+      setModifyData(data)
+    }
+
     const service = localStorage.getItem('serviceSelectionne')
     const creneau = localStorage.getItem('creneauSelectionne')
     
@@ -82,7 +93,61 @@ export default function ConfirmationPage() {
     setError(null)
 
     try {
+      // 🔥 REVALIDATION : Vérifier que le créneau est toujours disponible AVANT submit
+      // Step 6 : Inclure staff_member_id si choisi
+      let revalidationUrl = `/api/disponibilites/available?service_id=${serviceSelectionne.id}&date=${creneauSelectionne.date}&_t=${Date.now()}`
+      if (creneauSelectionne.staff_member_id) {
+        revalidationUrl += `&staff_member_id=${creneauSelectionne.staff_member_id}`
+      }
+      
+      const revalidationRes = await axios.get(revalidationUrl, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      })
+
+      // Vérifier que le créneau sélectionné est encore dans la liste
+      const stillAvailable = revalidationRes.data?.data?.available_slots?.some(
+        (slot: any) => slot.heure === creneauSelectionne.heure && slot.date === creneauSelectionne.date
+      )
+
+      if (!stillAvailable) {
+        setError(
+          `❌ Ce créneau n'est plus disponible (réservé entre-temps). Veuillez en choisir un autre.`
+        )
+        setLoading(false)
+        // Nettoyer la sélection pour forcer retour à date
+        localStorage.removeItem('creneauSelectionne')
+        setTimeout(() => router.push('/rendezvous/date'), 2000)
+        return
+      }
+
+      // Si mode modification, appeler l'API modify au lieu de création
+      if (isModifying && modifyData) {
+        const response = await axios.post('/api/rendezvous/modify', {
+          appointmentId: modifyData.id,
+          token: modifyData.token,
+          newDate: creneauSelectionne.date,
+          newStartTime: creneauSelectionne.heure,
+          required_slot_ids: creneauSelectionne.required_slots?.map(s => s.id) || [],
+          staff_member_id: creneauSelectionne.staff_member_id || null,
+        })
+
+        if (response.data.success) {
+          setSuccess(true)
+          sessionStorage.removeItem('modifyAppointment')
+          localStorage.removeItem('serviceSelectionne')
+          localStorage.removeItem('creneauSelectionne')
+        } else {
+          setError(response.data.error || 'Une erreur est survenue')
+        }
+        return
+      }
+
+      // Sinon, création normale
       // Envoyer la demande de rendez-vous avec les créneaux requis
+      // Step 6 : Inclure staff_member_id si le client a choisi un coiffeur
       const response = await axios.post('/api/rendezvous', {
         nom: formData.nom,
         telephone: formData.telephone,
@@ -93,6 +158,7 @@ export default function ConfirmationPage() {
         heure: creneauSelectionne.heure,
         message: formData.message,
         required_slot_ids: creneauSelectionne.required_slots?.map(s => s.id) || [],
+        staff_member_id: creneauSelectionne.staff_member_id || null, // Step 6
       })
 
       if (response.data.success) {
@@ -107,6 +173,27 @@ export default function ConfirmationPage() {
       }
     } catch (err: any) {
       console.error('Erreur lors de la soumission:', err)
+      
+      // Gestion spécifique de l'erreur 409 (créneau plus disponible)
+      if (err.response?.status === 409) {
+        const errorCode = err.response?.data?.error_code
+        
+        // Step 6 : Erreur spécifique si le coiffeur choisi n'est plus disponible
+        if (errorCode === 'STAFF_NOT_AVAILABLE') {
+          setError('Votre coiffeur n\'est plus disponible pour ce créneau. Veuillez choisir un autre horaire ou un autre coiffeur.')
+        } else if (errorCode === 'NO_STAFF_AVAILABLE') {
+          setError('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.')
+        } else {
+          setError('Ce créneau n\'est plus disponible. Veuillez en choisir un autre.')
+        }
+        
+        // Rafraîchir les disponibilités en renvoyant vers la page de sélection de créneau
+        setTimeout(() => {
+          router.push('/rendezvous/date')
+        }, 3000)
+        return
+      }
+      
       setError(err.response?.data?.error || 'Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setLoading(false)
@@ -130,13 +217,13 @@ export default function ConfirmationPage() {
   // Page de succès
 if (success) {
   return (
-    <main className="bg-light min-h-screen flex items-center justify-center">
+    <main className="bg-gray-50 min-h-screen flex items-center justify-center">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 sm:p-8 text-center">
           <div className="mb-6">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-10 h-10 text-green-600"
+                className="w-8 h-8 sm:w-10 sm:h-10 text-green-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -149,16 +236,16 @@ if (success) {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-brand text-dark mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Réservation confirmée !
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Votre demande de rendez-vous a bien été enregistrée.
             </p>
           </div>
 
-          <div className="bg-light rounded-lg p-6 mb-6 text-left">
-            <h3 className="text-lg font-semibold text-dark mb-4">
+          <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6 text-left">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
               Récapitulatif de votre rendez-vous
             </h3>
             
@@ -200,7 +287,7 @@ if (success) {
           {/* ✅ Supprimé la phrase de redirection */}
           <button
             onClick={() => router.push('/')}
-            className="bg-primary text-white px-8 py-3 rounded-md hover:bg-[#a68b36] transition-colors font-medium"
+            className="bg-primary text-white px-6 sm:px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm"
           >
             Retour à l'accueil
           </button>
@@ -214,13 +301,13 @@ if (success) {
   // Formulaire de confirmation
   return (
     <main className="bg-light min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
         {/* En-tête */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-brand font-normal mb-2 text-dark">
-            Confirmer votre rendez-vous
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Confirmation du rendez-vous
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Étape 3 sur 3 - Vos coordonnées
           </p>
         </div>
@@ -234,8 +321,8 @@ if (success) {
 
         <div className="space-y-6">
           {/* Récapitulatif de la réservation */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-dark mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
               Récapitulatif de votre réservation
             </h2>
 
@@ -281,8 +368,8 @@ if (success) {
           </div>
 
           {/* Formulaire */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-dark mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
               Vos coordonnées
             </h2>
 
@@ -364,7 +451,7 @@ if (success) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-dark text-white py-4 rounded-md hover:bg-accent transition-colors font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-white py-3 sm:py-4 rounded-lg hover:bg-primary/90 transition-colors font-medium text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
                   {loading ? 'Envoi en cours...' : 'Confirmer la réservation'}
                 </button>

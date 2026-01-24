@@ -254,7 +254,7 @@ export default function TimeRangeModal({
 
                           <div className="bg-blue-50 border border-blue-200 rounded p-3">
                             <p className="text-xs text-blue-900">
-                              <strong>ℹ️ Information :</strong> Les créneaux seront créés uniquement pour les{' '}
+                              <strong>Information :</strong> Les créneaux seront créés uniquement pour les{' '}
                               <strong>{dayLabel}</strong>. Les doublons ne seront pas créés.
                             </p>
                           </div>

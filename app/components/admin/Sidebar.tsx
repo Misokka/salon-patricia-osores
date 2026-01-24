@@ -15,6 +15,8 @@ import {
   FaSignOutAlt,
   FaChevronLeft,
   FaChevronRight,
+  FaUsers,
+  FaCog,
 } from 'react-icons/fa'
 import { createClient } from '@/lib/supabase/client'
 import { salonConfig } from '@/config/salon.config'
@@ -161,8 +163,25 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
             isCollapsed={isCollapsed}
             defaultOpen={pathname.startsWith('/admin/images')}
             items={[
+              { label: 'Image À propos', href: '/admin/images/about', isActive: pathname === '/admin/images/about' },
               { label: 'Galerie des réalisations', href: '/admin/images/galerie', isActive: pathname === '/admin/images/galerie' },
             ]}
+          />
+
+          <SidebarItem
+            href="/admin/equipe"
+            icon={FaUsers}
+            label="Équipe"
+            isActive={pathname === '/admin/equipe'}
+            isCollapsed={isCollapsed}
+          />
+
+          <SidebarItem
+            href="/admin/parametres"
+            icon={FaCog}
+            label="Paramètres"
+            isActive={pathname === '/admin/parametres'}
+            isCollapsed={isCollapsed}
           />
 
           
@@ -313,6 +332,24 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
                   { label: 'Image principale', href: '/admin/images/about', isActive: pathname === '/admin/images/about' },
                   { label: 'Galerie des réalisations', href: '/admin/images/galerie', isActive: pathname === '/admin/images/galerie' },
                 ]}
+              />
+
+              <SidebarItem
+                href="/admin/equipe"
+                icon={FaUsers}
+                label="Équipe"
+                isActive={pathname === '/admin/equipe'}
+                isCollapsed={false}
+                onClick={onClose}
+              />
+
+              <SidebarItem
+                href="/admin/parametres"
+                icon={FaCog}
+                label="Paramètres"
+                isActive={pathname === '/admin/parametres'}
+                isCollapsed={false}
+                onClick={onClose}
               />
 
               

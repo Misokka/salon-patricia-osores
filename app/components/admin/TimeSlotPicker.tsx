@@ -27,16 +27,19 @@ export default function TimeSlotPicker({
     const slots: string[] = []
     const startHour = 8
     const endHour = 19
+    const startMinutes = startHour * 60 // 8h = 480 minutes
+    const endMinutes = endHour * 60 // 19h = 1140 minutes
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += frequency) {
-        if (minute % 5 !== 0) continue
-        slots.push(
-          `${hour.toString().padStart(2, '0')}:${minute
-            .toString()
-            .padStart(2, '0')}`
-        )
-      }
+    // Générer les créneaux de manière continue en minutes
+    for (let totalMinutes = startMinutes; totalMinutes < endMinutes; totalMinutes += frequency) {
+      const hour = Math.floor(totalMinutes / 60)
+      const minute = totalMinutes % 60
+      
+      slots.push(
+        `${hour.toString().padStart(2, '0')}:${minute
+          .toString()
+          .padStart(2, '0')}`
+      )
     }
     return slots
   }, [frequency])

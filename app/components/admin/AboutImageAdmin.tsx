@@ -250,7 +250,7 @@ export default function AboutImageAdmin() {
 
         {/* Tips */}
         <div className="mt-10 bg-blue-50 text-blue-800 rounded-lg p-4 text-sm">
-          <p className="font-medium mb-2">ℹ️ Conseils</p>
+          <p className="font-medium mb-2">Conseils</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Ratio recommandé : 3:2 (paysage)</li>
             <li>Image représentative du salon</li>

@@ -6,6 +6,18 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '@/lib/auth/verifyAdmin'
 import { validateAppointmentSlots } from '@/lib/appointmentValidation'
 
+// Types pour la réponse RPC
+interface BookAppointmentResult {
+  success: boolean
+  error?: string
+  message?: string
+  appointment_id?: string
+  staff_member_id?: string
+  staff_member_name?: string
+  end_time?: string
+  data?: Record<string, any>
+}
+
 /**
  * POST - Créer un rendez-vous manuellement (admin uniquement)
  * Utilisé par les coiffeurs pour ajouter des RDV pris par téléphone/sur place
@@ -111,83 +123,148 @@ export async function POST(request: Request) {
     const normalizedEmail = customer_email?.trim() || null
     const normalizedNote = internal_note?.trim() || null
 
-    // Créer le rendez-vous avec statut "accepted" (confirmé par admin)
-    const { data: newAppointment, error: insertError } = await supabaseAdmin
-      .from('appointments')
-      .insert([
-        {
-          salon_id: salonId,
-          service_id: service_id,
-          customer_name: customer_name.trim(),
-          customer_phone: normalizedPhone,
-          customer_email: normalizedEmail,
-          appointment_date: date,
-          start_time: heure,
-          status: 'accepted', // Confirmé directement par l'admin
-        },
-      ])
-      .select()
+    // Récupérer la durée du service
+    const { data: serviceData, error: serviceError } = await supabaseAdmin
+      .from('services')
+      .select('name, duration_minutes')
+      .eq('id', service_id)
       .single()
 
-    if (insertError) {
+    if (serviceError || !serviceData) {
       return NextResponse.json(
-        { success: false, error: "Erreur lors de l'enregistrement du rendez-vous" },
+        { success: false, error: 'Service introuvable' },
+        { status: 404 }
+      )
+    }
+
+    const durationMinutes = serviceData.duration_minutes
+
+    // ===================================================
+    // STEP 3 : Admin peut spécifier un staff ou auto-assign
+    // Si staff_member_id fourni, on l'utilise directement
+    // Sinon, on utilise la RPC pour auto-assignation
+    // ===================================================
+    
+    if (body.staff_member_id) {
+      // Admin a choisi un staff spécifique - insertion directe
+      // Calculer end_time en TypeScript (format HH:mm:ss)
+      const [hours, minutes] = heure.split(':').map(Number)
+      const totalMinutes = hours * 60 + minutes + durationMinutes
+      const endHours = Math.floor(totalMinutes / 60) % 24
+      const endMins = totalMinutes % 60
+      const endTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}:00`
+
+      const { data: newAppointment, error: insertError } = await supabaseAdmin
+        .from('appointments')
+        .insert([
+          {
+            salon_id: salonId,
+            service_id: service_id,
+            customer_name: customer_name.trim(),
+            customer_phone: normalizedPhone,
+            customer_email: normalizedEmail,
+            appointment_date: date,
+            start_time: heure,
+            end_time: endTime,
+            status: 'accepted',
+            origin: 'admin',
+            staff_member_id: body.staff_member_id,
+          },
+        ])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('[POST /api/admin/rendezvous/create] Insert error:', insertError)
+        return NextResponse.json(
+          { success: false, error: "Erreur lors de l'enregistrement du rendez-vous" },
+          { status: 500 }
+        )
+      }
+
+      // Créer les liaisons appointment_slots (tracking uniquement - ne pas bloquer time_slots)
+      const slotsLinks = required_slot_ids.map((slotId: string, index: number) => ({
+        appointment_id: newAppointment.id,
+        time_slot_id: slotId,
+        slot_order: index + 1,
+      }))
+
+      await supabaseAdmin.from('appointment_slots').insert(slotsLinks)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Rendez-vous créé avec succès',
+        data: newAppointment,
+        slots_reserved: required_slot_ids.length,
+      })
+    }
+
+    // Auto-assignation via RPC
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin
+      .rpc('book_appointment_with_staff', {
+        p_salon_id: salonId,
+        p_service_id: service_id,
+        p_customer_name: customer_name.trim(),
+        p_customer_phone: normalizedPhone,
+        p_customer_email: normalizedEmail,
+        p_appointment_date: date,
+        p_start_time: heure,
+        p_duration_minutes: durationMinutes,
+        p_message: normalizedNote,
+        p_origin: 'admin',
+        p_initial_status: 'accepted'
+      }) as { data: BookAppointmentResult | null, error: any }
+
+    if (rpcError) {
+      console.error('[POST /api/admin/rendezvous/create] RPC error:', rpcError)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors de la création du rendez-vous' },
         { status: 500 }
       )
     }
 
-    const appointmentId = newAppointment.id
-
-    // Marquer tous les créneaux comme non disponibles
-    const { error: updateError } = await supabaseAdmin
-      .from('time_slots')
-      .update({ is_available: false })
-      .in('id', required_slot_ids)
-
-    if (updateError) {
-      // Rollback : supprimer le rendez-vous créé
-      await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
+    if (!rpcResult || !rpcResult.success) {
+      const errorCode = rpcResult?.error || 'unknown_error'
+      const errorMessage = rpcResult?.message || 'Erreur lors de la réservation'
+      
+      if (errorCode === 'no_staff_available') {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Aucun membre de l\'équipe n\'est disponible pour ce créneau.',
+            error_code: 'NO_STAFF_AVAILABLE'
+          },
+          { status: 409 }
+        )
+      }
+      
       return NextResponse.json(
-        { success: false, error: 'Erreur lors de la réservation des créneaux' },
+        { success: false, error: errorMessage },
         { status: 500 }
       )
     }
 
-    // Créer les liaisons dans appointment_slots
-    const slotsLinks = required_slot_ids.map((slotId, index) => ({
+    const appointmentId = rpcResult.appointment_id!
+    const newAppointment = rpcResult.data
+
+    // Créer les liaisons appointment_slots (tracking uniquement - ne pas bloquer time_slots)
+    const slotsLinks = required_slot_ids.map((slotId: string, index: number) => ({
       appointment_id: appointmentId,
       time_slot_id: slotId,
       slot_order: index + 1,
     }))
 
-    const { error: linksError } = await supabaseAdmin
-      .from('appointment_slots')
-      .insert(slotsLinks)
-
-    if (linksError) {
-      // Rollback : supprimer le rendez-vous et libérer les créneaux
-      await supabaseAdmin.from('appointments').delete().eq('id', appointmentId)
-      await supabaseAdmin
-        .from('time_slots')
-        .update({ is_available: true })
-        .in('id', required_slot_ids)
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de la liaison des créneaux' },
-        { status: 500 }
-      )
-    }
-
-
-    // Note interne sauvegardée (si besoin d'une table dédiée, à implémenter)
-    // Pour l'instant, on pourrait l'ajouter dans une colonne "notes" de appointments
+    await supabaseAdmin.from('appointment_slots').insert(slotsLinks)
 
     return NextResponse.json({
       success: true,
       message: 'Rendez-vous créé avec succès',
       data: newAppointment,
       slots_reserved: required_slot_ids.length,
+      staff_member_name: rpcResult.staff_member_name,
     })
   } catch (error) {
+    console.error('[POST /api/admin/rendezvous/create] Exception:', error)
     return NextResponse.json(
       { success: false, error: 'Erreur serveur interne' },
       { status: 500 }

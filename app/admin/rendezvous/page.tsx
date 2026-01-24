@@ -15,7 +15,7 @@ export default function AdminRendezvousPage() {
       {/* En-tête */}
       <div className="mb-4 sm:mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-brand font-normal text-gray-900 mb-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
             Rendez-vous
           </h1>
           <p className="text-xs sm:text-sm text-gray-600">

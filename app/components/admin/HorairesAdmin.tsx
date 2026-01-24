@@ -384,7 +384,7 @@ export default function HorairesAdmin() {
       </div>
 
       {/* Réservation en ligne */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+      {/* <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div>
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Prise de rendez-vous en ligne</h2>
@@ -407,7 +407,7 @@ export default function HorairesAdmin() {
             />
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Jours d'ouverture */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">

@@ -13,10 +13,13 @@ import {
   FaEuroSign,
   FaCalendar,
   FaStickyNote,
+  FaUserFriends,
 } from 'react-icons/fa'
 
 import type { AppointmentWithDetails } from '@/types/appointment'
 import CancelAppointmentModal from './../CancelAppointmentModal'
+import ReassignAppointmentModal from './ReassignAppointmentModal'
+import { getStaffColor } from './TimeGrid'
 
 interface AppointmentDetailModalProps {
   appointment: AppointmentWithDetails | null
@@ -26,6 +29,7 @@ interface AppointmentDetailModalProps {
   onCancel?: (id: string) => void
   onAccept?: (id: string) => void
   onRefuse?: (id: string) => void
+  onReassignSuccess?: () => void
 }
 
 export default function AppointmentDetailModal({
@@ -36,8 +40,10 @@ export default function AppointmentDetailModal({
   onCancel,
   onAccept,
   onRefuse,
+  onReassignSuccess,
 }: AppointmentDetailModalProps) {
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [reassignModalOpen, setReassignModalOpen] = useState(false)
 
   if (!appointment) return null
 
@@ -176,6 +182,44 @@ export default function AppointmentDetailModal({
                         </span>
                       </div>
                     </div>
+
+                    {/* Nouvelle date/heure proposée */}
+                    {((appointment as any).proposed_date || (appointment as any).proposed_start_time) && (
+                      <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                        <p className="text-sm font-semibold text-amber-800 mb-2">→ Nouvelle date demandée par le client :</p>
+                        <div className="space-y-2">
+                          {(appointment as any).proposed_date && (
+                            <div className="flex items-center gap-3">
+                              <FaCalendar className="text-amber-600" />
+                              <span className="capitalize font-medium text-amber-900">
+                                {format(
+                                  new Date((appointment as any).proposed_date),
+                                  'EEEE d MMMM yyyy',
+                                  { locale: fr }
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          {(appointment as any).proposed_start_time && (
+                            <div className="flex items-center gap-3">
+                              <FaClock className="text-amber-600" />
+                              <span className="font-medium text-amber-900">
+                                {(appointment as any).proposed_start_time.substring(0, 5)}
+                                {appointment.service_duration && (
+                                  <>
+                                    {' – '}
+                                    {format(
+                                      new Date(`2000-01-01T${(appointment as any).proposed_start_time}`).getTime() + appointment.service_duration * 60000,
+                                      'HH:mm'
+                                    )}
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </section>
 
                   {/* Service */}
@@ -194,6 +238,39 @@ export default function AppointmentDetailModal({
                     </div>
                   </section>
 
+                  {/* Staff assigné - Step 7.2 */}
+                  {appointment.staff_member_name && (
+                    <section className="border-t pt-6">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <FaUserFriends />
+                        Coiffeur assigné
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            const staffId = (appointment as any).staff_member_id
+                            const color = getStaffColor(staffId)
+                            const initials = appointment.staff_member_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                            return (
+                              <div className={`w-10 h-10 rounded-full ${color.bg} border-2 ${color.border} ${color.text} flex items-center justify-center font-medium text-sm`}>
+                                {initials}
+                              </div>
+                            )
+                          })()}
+                          <span className="font-medium">{appointment.staff_member_name}</span>
+                        </div>
+                        {(appointment.status === 'pending' || appointment.status === 'accepted') && (
+                          <button
+                            onClick={() => setReassignModalOpen(true)}
+                            className="text-sm text-primary hover:underline"
+                          >
+                            Réassigner
+                          </button>
+                        )}
+                      </div>
+                    </section>
+                  )}
+
                   {/* Notes */}
                   {appointment.notes && (
                     <section className="border-t pt-6">
@@ -211,6 +288,7 @@ export default function AppointmentDetailModal({
                 {/* Footer */}
                 <div className="border-t px-4 sm:px-6 py-4 flex flex-wrap gap-2 justify-between">
                   <div className="flex gap-2 flex-wrap">
+                    {/* Boutons Accepter/Refuser pour tous les RDV pending */}
                     {appointment.status === 'pending' && (
                       <div className="flex gap-2">
                         {onAccept && (
@@ -239,6 +317,7 @@ export default function AppointmentDetailModal({
 
                       </div>
                     )}
+
 
 
                     {onEdit && appointment.status === 'accepted' && (
@@ -282,6 +361,21 @@ export default function AppointmentDetailModal({
           if (!appointment || !onCancel) return
           onCancel(appointment.id)
           setCancelModalOpen(false)
+          onClose()
+        }}
+      />
+
+      {/* ===== MODALE RÉASSIGNATION - Step 7.2 ===== */}
+      <ReassignAppointmentModal
+        isOpen={reassignModalOpen}
+        appointmentId={appointment?.id || null}
+        currentStaffName={appointment?.staff_member_name}
+        onClose={() => setReassignModalOpen(false)}
+        onSuccess={() => {
+          setReassignModalOpen(false)
+          if (onReassignSuccess) {
+            onReassignSuccess()
+          }
           onClose()
         }}
       />

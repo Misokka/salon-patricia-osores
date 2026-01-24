@@ -48,50 +48,49 @@ export default function AgendaHeader({
 
   return (
     <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 sticky top-0 z-20 shadow-sm">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        {/* Section gauche: Navigation date */}
-        <div className="flex items-center gap-3">
-          {/* Bouton Aujourd'hui */}
-          {onRefresh && (
-            <RefreshButton
-              onRefresh={onRefresh}
-              loading={refreshing}
-              label="Actualiser"
-            />
-          )}
-          <button
-            onClick={onToday}
-            disabled={isToday(currentDate)}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Aujourd'hui
-          </button>
+      <div className="flex flex-col gap-3">
+        {/* Label date en haut */}
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 capitalize">
+          {getDateLabel()}
+        </h2>
 
-          
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          {/* Section gauche: Navigation date */}
+          <div className="flex items-center gap-3">
+            {/* Bouton Aujourd'hui */}
+            {onRefresh && (
+              <RefreshButton
+                onRefresh={onRefresh}
+                loading={refreshing}
+                label="Actualiser"
+              />
+            )}
+            <button
+              onClick={onToday}
+              disabled={isToday(currentDate)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Aujourd'hui
+            </button>
 
-          {/* Navigation précédent/suivant */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onPrevious}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label={viewMode === 'day' ? 'Jour précédent' : 'Semaine précédente'}
-            >
-              <FaChevronLeft className="text-sm" />
-            </button>
-            <button
-              onClick={onNext}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label={viewMode === 'day' ? 'Jour suivant' : 'Semaine suivante'}
-            >
-              <FaChevronRight className="text-sm" />
-            </button>
+            {/* Navigation précédent/suivant */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onPrevious}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label={viewMode === 'day' ? 'Jour précédent' : 'Semaine précédente'}
+              >
+                <FaChevronLeft className="text-sm" />
+              </button>
+              <button
+                onClick={onNext}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label={viewMode === 'day' ? 'Jour suivant' : 'Semaine suivante'}
+              >
+                <FaChevronRight className="text-sm" />
+              </button>
+            </div>
           </div>
-
-          {/* Label date */}
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 capitalize min-w-0 sm:min-w-[280px]">
-            {getDateLabel()}
-          </h2>
-        </div>
 
         {/* Section droite: Contrôles */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
@@ -134,6 +133,7 @@ export default function AgendaHeader({
               ))}
             </select>
           </div>
+        </div>
         </div>
       </div>
     </div>

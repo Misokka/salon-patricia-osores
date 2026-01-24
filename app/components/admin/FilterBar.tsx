@@ -1,7 +1,8 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 
 export type FilterStatus = 'tous' | 'en_attente' | 'accepte' | 'refuse'
 export type FilterPeriod = 'tous' | 'aujourdhui' | 'semaine' | 'a_venir' | 'passes'
@@ -10,9 +11,11 @@ interface FilterBarProps {
   statusFilter: FilterStatus
   periodFilter: FilterPeriod
   searchQuery: string
+  specificDate: string | null
   onStatusChange: (status: FilterStatus) => void
   onPeriodChange: (period: FilterPeriod) => void
   onSearchChange: (query: string) => void
+  onSpecificDateChange: (date: string | null) => void
   counts: {
     tous: number
     en_attente: number
@@ -25,11 +28,14 @@ export default function FilterBar({
   statusFilter,
   periodFilter,
   searchQuery,
+  specificDate,
   onStatusChange,
   onPeriodChange,
   onSearchChange,
+  onSpecificDateChange,
   counts,
 }: FilterBarProps) {
+  const [isExpanded, setIsExpanded] = useState(true)
   
   const statusOptions: { value: FilterStatus; label: string; color: string }[] = [
     { value: 'tous', label: 'Tous', color: 'gray' },
@@ -63,93 +69,158 @@ export default function FilterBar({
     }
   }
 
-  const hasActiveFilters = statusFilter !== 'tous' || periodFilter !== 'tous' || searchQuery !== ''
+  const hasActiveFilters = statusFilter !== 'tous' || periodFilter !== 'tous' || searchQuery !== '' || specificDate !== null
 
   const clearAllFilters = () => {
     onStatusChange('tous')
     onPeriodChange('tous')
     onSearchChange('')
+    onSpecificDateChange(null)
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
-      {/* Recherche */}
-      <div className="relative">
-        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher par nom ou service..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => onSearchChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="w-4 sm:w-5 h-4 sm:h-5" />
-          </button>
-        )}
-      </div>
-
-      {/* Filtres statut */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <FunnelIcon className="w-4 h-4 text-gray-500" />
-          <span className="text-xs sm:text-sm font-medium text-gray-700">Statut</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          {statusOptions.map((option) => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Header - Always visible with toggle on mobile */}
+      <div className="p-3 sm:p-4 lg:p-5 space-y-3">
+        {/* Recherche - Always visible */}
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom ou service..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+          />
+          {searchQuery && (
             <button
-              key={option.value}
-              onClick={() => onStatusChange(option.value)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all border ${getStatusColorClass(
-                option.color,
-                statusFilter === option.value
-              )}`}
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              {option.label}
-              <span className="ml-1.5 text-xs opacity-75">
-                ({option.value === 'tous' ? counts.tous : counts[option.value]})
-              </span>
+              <XMarkIcon className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
-          ))}
+          )}
         </div>
-      </div>
 
-      {/* Filtres période */}
-      <div>
-        <span className="text-xs sm:text-sm font-medium text-gray-700 mb-2 block">Période</span>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          {periodOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onPeriodChange(option.value)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
-                periodFilter === option.value
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+        {/* Date picker - Always visible */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="specific-date" className="text-xs sm:text-sm font-medium text-gray-700 shrink-0">
+            Date précise :
+          </label>
+          <div className="relative flex-1">
+            <input
+              id="specific-date"
+              type="date"
+              value={specificDate || ''}
+              onChange={(e) => onSpecificDateChange(e.target.value || null)}
+              className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
+            {specificDate && (
+              <button
+                onClick={() => onSpecificDateChange(null)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Effacer la date"
+              >
+                <XMarkIcon className="w-4 sm:w-5 h-4 sm:h-5" />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Clear all filters */}
-      {hasActiveFilters && (
-        <motion.button
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={clearAllFilters}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        {/* Toggle button - Mobile only */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="md:hidden flex items-center justify-between w-full py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
         >
-          <XMarkIcon className="w-4 h-4" />
-          Réinitialiser les filtres
-        </motion.button>
-      )}
+          <span className="flex items-center gap-2">
+            <FunnelIcon className="w-4 h-4" />
+            Filtres avancés
+            {hasActiveFilters && (
+              <span className="ml-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                Actifs
+              </span>
+            )}
+          </span>
+          {isExpanded ? (
+            <ChevronUpIcon className="w-5 h-5" />
+          ) : (
+            <ChevronDownIcon className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+
+      {/* Filters - Collapsible on mobile, always visible on desktop */}
+      <AnimatePresence initial={false}>
+        {(isExpanded || typeof window !== 'undefined' && window.innerWidth >= 768) && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:!h-auto md:!opacity-100"
+          >
+            <div className="px-3 sm:px-4 lg:px-5 pb-3 sm:pb-4 lg:pb-5 space-y-3 sm:space-y-4 border-t border-gray-100 pt-3 sm:pt-4 md:border-0 md:pt-0">
+              {/* Filtres statut */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <FunnelIcon className="w-4 h-4 text-gray-500" />
+                  <span className="text-xs sm:text-sm font-medium text-gray-700">Statut</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => onStatusChange(option.value)}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all border ${getStatusColorClass(
+                        option.color,
+                        statusFilter === option.value
+                      )}`}
+                    >
+                      {option.label}
+                      <span className="ml-1.5 text-xs opacity-75">
+                        ({option.value === 'tous' ? counts.tous : counts[option.value]})
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtres période */}
+              <div>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 mb-2 block">Période</span>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {periodOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => onPeriodChange(option.value)}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                        periodFilter === option.value
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear all filters */}
+              {hasActiveFilters && (
+                <motion.button
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                  Réinitialiser les filtres
+                </motion.button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

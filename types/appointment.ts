@@ -23,4 +23,7 @@ export interface AppointmentWithDetails extends Appointment {
   /* Service */
   service_duration?: number
   service_price?: number
+  /* Staff - Step 7 */
+  staff_member_id?: string
+  staff_member_name?: string
 }

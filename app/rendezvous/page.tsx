@@ -7,7 +7,6 @@ import { usePublicSchedule } from '@/lib/hooks/usePublicSchedule'
 
 import type { Service, ServiceCategoryWithServices } from '@/types/service'
 import type { ServiceSelection } from '@/types/service-selection'
-import salonConfig from '@/config/salon.config'
 
 interface Category {
   id: string
@@ -71,36 +70,37 @@ export default function ServicesPage() {
 
   return (
     <main className="bg-light min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         {/* En-tête */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-brand font-normal mb-2 text-dark">
-            Réserver en ligne chez {salonConfig.identity.shortName} 
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Réserver en ligne
           </h1>
-          <p className="text-gray-600">
-            24h/24 - Gratuitement - Paiement sur place - Confirmation immédiate
+          <p className="text-sm sm:text-base text-gray-600">
+            24h/24 · Gratuitement · Paiement sur place
           </p>
         </div>
 
         {/* Layout deux colonnes */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Colonne principale - Services */}
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-2xl font-semibold text-dark">
-              Choix de la prestation
-            </h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
+                1. Choisissez votre prestation
+              </h2>
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-                <p className="mt-4 text-gray-600">Chargement des services...</p>
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-gray-300 border-t-primary" />
+                <p className="mt-4 text-sm text-gray-600">Chargement des services...</p>
               </div>
             ) : categories.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                 <p className="text-gray-600">Aucun service disponible pour le moment.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {categories.map((category) => {
                   const isOpen = openCategoryId === category.id
 
@@ -142,20 +142,20 @@ export default function ServicesPage() {
                           return (
                             <div
                               key={service.id}
-                              className="flex items-center justify-between py-3 hover:bg-gray-50 rounded-lg px-3 transition-colors"
+                              className="flex items-center justify-between py-3 px-3 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-100 last:border-0"
                             >
                               <div className="flex-1">
-                                <h4 className="text-base font-medium text-dark mb-1">
+                                <h4 className="text-sm sm:text-base font-medium text-gray-900 mb-1">
                                   {service.name}
                                 </h4>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-xs sm:text-sm text-gray-500">
                                   {service.duration_minutes} min · {price}
                                 </p>
                               </div>
 
                               <button
                                 onClick={() => handleSelectService(service)}
-                                className="bg-dark text-white px-6 py-2 rounded-md hover:bg-accent transition-colors text-sm font-medium"
+                                className="bg-primary text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors text-xs sm:text-sm font-medium shadow-sm"
                               >
                                 Choisir
                               </button>
@@ -168,35 +168,36 @@ export default function ServicesPage() {
                 })}
               </div>
             )}
+            </div>
           </div>
 
           {/* Colonne latérale - Horaires */}
-          <div className="lg:col-span-1 pt-14">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-              <h3 className="text-lg font-semibold text-dark mb-4">
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 sticky top-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
                 Horaires d'ouverture
               </h3>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {loadingHoraires ? (
-                  <p className="text-sm text-gray-400">Chargement...</p>
+                  <p className="text-xs sm:text-sm text-gray-400">Chargement...</p>
                 ) : (
                   horaires.map((horaire) => (
                     <div
                       key={horaire.jour}
-                      className="flex justify-between items-center py-2"
+                      className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
                     >
                       <span
-                        className={`text-sm font-medium ${
+                        className={`text-xs sm:text-sm font-medium ${
                           horaire.heures === 'Fermé'
                             ? 'text-gray-400'
-                            : 'text-dark'
+                            : 'text-gray-900'
                         }`}
                       >
                         {horaire.jour}
                       </span>
                       <span
-                        className={`text-sm ${
+                        className={`text-xs sm:text-sm ${
                           horaire.heures === 'Fermé'
                             ? 'text-gray-400'
                             : 'text-gray-600'

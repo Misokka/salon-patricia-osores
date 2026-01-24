@@ -11,7 +11,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-
 interface RendezVousData {
   nom: string;
   telephone: string;
@@ -20,6 +19,8 @@ interface RendezVousData {
   date: string;
   heure: string;
   message?: string;
+  managementUrl?: string;
+  appointmentId?: string;
 }
 
 interface AcceptanceEmailData {
@@ -28,6 +29,7 @@ interface AcceptanceEmailData {
   service: string;
   date: string;
   heure: string;
+  managementUrl?: string;
 }
 
 interface RejectionEmailData {
@@ -86,8 +88,18 @@ interface ExceptionalClosureData {
   reason: string;
 }
 
+interface StaffChangeEmailData {
+  nom: string;
+  email: string;
+  service: string;
+  date: string;
+  heure: string;
+  oldStaffName: string;
+  newStaffName: string;
+}
 
-function getSiteUrl() {
+
+export function getSiteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 }
 
@@ -95,7 +107,7 @@ function getSiteUrl() {
  * Formate une heure au format français : 10h30
  * @param time - Heure au format HH:mm ou HH:mm:ss
  */
-function formatTime(time: string): string {
+export function formatTime(time: string): string {
   if (!time) return '';
   // Extraire HH:mm depuis HH:mm ou HH:mm:ss
   const parts = time.split(':');
@@ -109,7 +121,7 @@ function formatTime(time: string): string {
  * Formate une date au format français : Mercredi 24 décembre 2025
  * @param date - Date au format YYYY-MM-DD ou objet Date
  */
-function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date): string {
   if (!date) return '';
   
   try {
@@ -142,7 +154,9 @@ function signatureHtml() {
  * Envoie un email de notification à l'admin (en français)
  */
 export async function sendEmailToPatricia(data: RendezVousData) {
-  const adminUrl = `${getSiteUrl()}/admin/rendezvous`;
+  const adminUrl = data.appointmentId 
+    ? `${getSiteUrl()}/admin/agenda?appointmentId=${data.appointmentId}`
+    : `${getSiteUrl()}/admin/rendezvous`;
 
   const mailOptions = {
     from: getFromEmail(),
@@ -192,6 +206,61 @@ export async function sendEmailToPatricia(data: RendezVousData) {
 }
 
 /**
+ * Envoie un email à l'admin quand un RDV est auto-accepté (pas de validation manuelle)
+ */
+export async function sendAutoConfirmedToAdmin(data: RendezVousData) {
+  const adminUrl = data.appointmentId 
+    ? `${getSiteUrl()}/admin/agenda?appointmentId=${data.appointmentId}`
+    : `${getSiteUrl()}/admin/rendezvous`;
+
+  const mailOptions = {
+    from: getFromEmail(),
+    replyTo: salonConfig.emails.replyTo,
+    to: salonConfig.admin.email,
+    subject: `Nouveau rendez-vous confirmé - ${data.nom}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #28a745; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Nouveau rendez-vous confirmé automatiquement</h2>
+        </div>
+
+        <div style="background-color: #f6f2ec; padding: 30px; border-radius: 0 0 8px 8px;">
+          <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 8px 0;"><strong>Client:</strong> ${data.nom}</p>
+            <p style="margin: 8px 0;"><strong>Téléphone:</strong> <a href="tel:${data.telephone}">${data.telephone}</a></p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${data.email || "Non indiqué"}</p>
+            <p style="margin: 8px 0;"><strong>Service:</strong> ${data.service}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${formatDate(data.date)}</p>
+            <p style="margin: 8px 0;"><strong>Heure:</strong> ${formatTime(data.heure)}</p>
+            ${data.message ? `<p style="margin: 8px 0;"><strong>Message:</strong> ${data.message}</p>` : ""}
+          </div>
+
+          <div style="background-color: #d4edda; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0; font-size: 14px;">
+              <strong>✓ Rendez-vous confirmé</strong><br/>
+              Ce rendez-vous a été automatiquement accepté car la validation manuelle est désactivée.<br/>
+              Le client a reçu une confirmation par email.
+            </p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${adminUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+              Voir dans l'agenda
+            </a>
+          </div>
+
+          <p style="font-size: 13px; color: #666; text-align: center;">
+            Pour modifier ce mode, rendez-vous dans les paramètres du salon.
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+/**
  * Envoie un email de confirmation au client (demande reçue)
  */
 export async function sendConfirmationToClient(data: RendezVousData) {
@@ -228,6 +297,17 @@ export async function sendConfirmationToClient(data: RendezVousData) {
               Vous recevrez un email de confirmation définitive sous peu.
             </p>
           </div>
+
+          ${data.managementUrl ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.managementUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px;">
+              Gérer mon rendez-vous
+            </a>
+          </div>
+          <p style="font-size: 13px; color: #666; text-align: center;">
+            Vous pouvez modifier ou annuler ce rendez-vous en cliquant sur le bouton ci-dessus.
+          </p>
+          ` : ''}
 
           <p style="font-size: 16px;">
             Merci pour votre confiance ! Nous avons hâte de vous accueillir.
@@ -271,6 +351,17 @@ export async function sendAcceptanceEmail(data: AcceptanceEmailData) {
             <p style="margin: 8px 0;"><strong>Heure :</strong> ${formatTime(data.heure)}</p>
             <p style="margin: 8px 0;"><strong>Service :</strong> ${data.service}</p>
           </div>
+
+          ${data.managementUrl ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.managementUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px;">
+              Gérer mon rendez-vous
+            </a>
+          </div>
+          <p style="font-size: 13px; color: #666; text-align: center;">
+            Vous pouvez modifier ou annuler ce rendez-vous en cliquant sur le bouton ci-dessus.
+          </p>
+          ` : ''}
 
           <p style="font-size: 14px; color: #666;">
             Nous vous attendons avec plaisir ! En cas d'empêchement, merci de nous prévenir au plus tôt.
@@ -721,6 +812,126 @@ export async function sendExceptionalClosureEmail(data: ExceptionalClosureData) 
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
             ${signatureHtml()}
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+/**
+ * Envoie un email au client pour le notifier d'un changement de coiffeur
+ */
+export async function sendStaffChangeEmail(data: StaffChangeEmailData) {
+  const siteUrl = getSiteUrl();
+
+  const mailOptions = {
+    from: getFromEmail(),
+    replyTo: salonConfig.emails.replyTo,
+    to: data.email,
+    subject: `${salonConfig.identity.name} - Changement de coiffeur pour votre rendez-vous`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #3b82f6; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Changement de coiffeur</h2>
+        </div>
+
+        <div style="background-color: #f6f2ec; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px;">Bonjour <strong>${data.nom}</strong>,</p>
+
+          <p style="font-size: 16px;">
+            Nous vous informons d'un changement concernant votre rendez-vous.
+          </p>
+
+          <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+            <p style="margin: 8px 0;"><strong>Détails du rendez-vous :</strong></p>
+            <p style="margin: 8px 0;">
+              ${formatDate(data.date)} à ${formatTime(data.heure)}<br/>
+              ${data.service}
+            </p>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 8px 0; color: #666;">
+                <strong>Ancien coiffeur :</strong> <span style="text-decoration: line-through;">${data.oldStaffName}</span>
+              </p>
+              <p style="margin: 8px 0; color: #059669; font-size: 16px;">
+                <strong>Nouveau coiffeur :</strong> <strong>${data.newStaffName}</strong>
+              </p>
+            </div>
+          </div>
+
+          <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+            <p style="margin: 0; font-size: 14px;">
+              <strong>La date et l'heure de votre rendez-vous restent inchangées.</strong><br/>
+              Seul le membre de notre équipe qui vous accueillera est modifié.
+            </p>
+          </div>
+
+          <p style="font-size: 14px; color: #666;">
+            Si vous avez des questions ou préoccupations, n'hésitez pas à nous contacter.
+          </p>
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+            ${signatureHtml()}
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+/**
+ * Envoie un email au gérant quand un client annule son RDV
+ */
+export async function sendClientCancellationToAdmin(data: {
+  nom: string
+  telephone: string
+  email: string
+  service: string
+  date: string
+  heure: string
+  staff_member?: string
+}) {
+  const adminUrl = `${getSiteUrl()}/admin/rendezvous`;
+
+  const mailOptions = {
+    from: getFromEmail(),
+    replyTo: salonConfig.emails.replyTo,
+    to: salonConfig.admin.email,
+    subject: `Annulation - ${data.nom} a annulé son rendez-vous`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #dc2626; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Rendez-vous annulé par le client</h2>
+        </div>
+
+        <div style="background-color: #f6f2ec; padding: 30px; border-radius: 0 0 8px 8px;">
+          <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 8px 0;"><strong>Client:</strong> ${data.nom}</p>
+            <p style="margin: 8px 0;"><strong>Téléphone:</strong> <a href="tel:${data.telephone}">${data.telephone}</a></p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${data.email || "Non indiqué"}</p>
+            <p style="margin: 8px 0;"><strong>Service:</strong> ${data.service}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${formatDate(data.date)}</p>
+            <p style="margin: 8px 0;"><strong>Heure:</strong> ${formatTime(data.heure)}</p>
+            ${data.staff_member ? `<p style="margin: 8px 0;"><strong>Coiffeur:</strong> ${data.staff_member}</p>` : ""}
+          </div>
+
+          <div style="background-color: #fee2e2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <p style="margin: 0; font-size: 14px;">
+              <strong>✗ Annulation client</strong><br/>
+              Le client a annulé son rendez-vous depuis le lien de gestion envoyé par email.<br/>
+              Le créneau est à nouveau disponible.
+            </p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${adminUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+              Voir l'agenda
+            </a>
           </div>
         </div>
       </div>

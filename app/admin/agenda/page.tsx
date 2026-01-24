@@ -1,39 +1,55 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { addDays, subDays, addWeeks, subWeeks, startOfToday, format } from 'date-fns'
 import axios from 'axios'
+import { useSearchParams } from 'next/navigation'
+import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
 import AgendaHeader, { ViewMode, TimeInterval } from '@/app/components/admin/agenda/AgendaHeader'
 import MiniCalendar from '@/app/components/admin/agenda/MiniCalendar'
 import CollaboratorFilter, { Collaborator } from '@/app/components/admin/agenda/CollaboratorFilter'
 import TimeGrid from '@/app/components/admin/agenda/TimeGrid'
 import AppointmentDetailModal from '@/app/components/admin/agenda/AppointmentDetailModal'
 import EditAppointmentModal from '@/app/components/admin/agenda/EditAppointmentModal'
+import MobileFiltersDrawer from '@/app/components/admin/agenda/MobileFiltersDrawer'
 import type { Appointment } from '@/types/appointment'
 
-export default function AgendaPage() {
+function AgendaContent() {
+  const searchParams = useSearchParams()
+  
   // États principaux
   const [currentDate, setCurrentDate] = useState<Date | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('day')
-  const [timeInterval, setTimeInterval] = useState<TimeInterval>(15)
+  const [viewMode, setViewMode] = useState<ViewMode>('week')  // Step 7.3: Semaine par défaut
+  const [timeInterval, setTimeInterval] = useState<TimeInterval>(60)  // Step 7.3: 60 min par défaut
   
   // Initialiser currentDate et timeInterval côté client uniquement
   useEffect(() => {
     setCurrentDate(startOfToday())
     
-    // Récupérer l'intervalle depuis localStorage
-    const saved = localStorage.getItem('agendaTimeInterval')
-    if (saved) {
-      setTimeInterval(Number(saved) as TimeInterval)
+    // Récupérer l'intervalle depuis localStorage (si déjà changé par l'utilisateur)
+    const savedInterval = localStorage.getItem('agendaTimeInterval')
+    const savedViewMode = localStorage.getItem('agendaViewMode')
+    const savedStaffViewMode = localStorage.getItem('agendaStaffViewMode')
+    
+    if (savedInterval) {
+      setTimeInterval(Number(savedInterval) as TimeInterval)
+    }
+    if (savedViewMode) {
+      setViewMode(savedViewMode as ViewMode)
+    }
+    // Par défaut, activer la vue par membre
+    if (savedStaffViewMode !== null) {
+      setStaffViewMode(savedStaffViewMode === 'true')
+    } else {
+      setStaffViewMode(true)
     }
   }, [])
   
   // Données
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([
-    { id: '1', name: 'Principal' }, // Collaborateur par défaut
-  ])
-  const [visibleCollaboratorIds, setVisibleCollaboratorIds] = useState<string[]>(['1'])
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([])
+  const [visibleCollaboratorIds, setVisibleCollaboratorIds] = useState<string[]>([])
+  const [staffLoaded, setStaffLoaded] = useState(false)
   
   // UI States
   const [loading, setLoading] = useState(false)
@@ -41,13 +57,81 @@ export default function AgendaPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [staffViewMode, setStaffViewMode] = useState(false)  // Step 7.3: Vue par staff
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)  // Drawer filtres mobile
+
+  // Ouvrir automatiquement le modal si appointmentId est dans l'URL
+  useEffect(() => {
+    const appointmentId = searchParams.get('appointmentId')
+    if (!appointmentId) return
+
+    // D'abord chercher dans les rendez-vous déjà chargés
+    const appointment = appointments.find(apt => apt.id === appointmentId)
+    if (appointment) {
+      setSelectedAppointment(appointment)
+      setShowDetailModal(true)
+      // Nettoyer l'URL après avoir ouvert le modal pour éviter de rouvrir à chaque action
+      window.history.replaceState({}, '', '/admin/agenda')
+      return
+    }
+
+    // Si pas trouvé dans la liste chargée, charger directement depuis l'API
+    const fetchAppointment = async () => {
+      try {
+        const response = await axios.get(`/api/admin/appointments/${appointmentId}`)
+        if (response.data.success && response.data.data) {
+          setSelectedAppointment(response.data.data)
+          setShowDetailModal(true)
+          // Nettoyer l'URL après avoir ouvert le modal pour éviter de rouvrir à chaque action
+          window.history.replaceState({}, '', '/admin/agenda')
+        }
+      } catch (error) {
+        console.error('Erreur chargement rendez-vous:', error)
+      }
+    }
+
+    fetchAppointment()
+  }, [searchParams, appointments])
 
   // Charger les rendez-vous
   useEffect(() => {
-    fetchAppointments()
-  }, [currentDate, viewMode, visibleCollaboratorIds])
+    if (currentDate && staffLoaded) {
+      fetchAppointments()
+    }
+  }, [currentDate, viewMode, visibleCollaboratorIds, staffLoaded])
+
+  // Step 7.3: Charger les membres d'équipe
+  useEffect(() => {
+    const fetchStaffMembers = async () => {
+      try {
+        const response = await axios.get('/api/admin/staff-members')
+        if (response.data.success) {
+          const staff = response.data.data || []
+          const activeStaff = staff.filter((s: any) => s.is_active)
+          
+          // Transformer en format Collaborator
+          const collabs: Collaborator[] = activeStaff.map((s: any) => ({
+            id: s.id,
+            name: s.name
+          }))
+          
+          setCollaborators(collabs)
+          // Par défaut, tous visibles
+          setVisibleCollaboratorIds(collabs.map(c => c.id))
+          setStaffLoaded(true)
+        }
+      } catch (error) {
+        console.error('Erreur chargement staff:', error)
+        setStaffLoaded(true) // Continuer quand même
+      }
+    }
+    
+    fetchStaffMembers()
+  }, [])
 
   const fetchAppointments = async () => {
+    if (!currentDate) return
+    
     setLoading(true)
     try {
       const dateParam = format(currentDate, 'yyyy-MM-dd')
@@ -62,7 +146,16 @@ export default function AgendaPage() {
       })
 
       if (response.data.success) {
-        setAppointments(response.data.data || [])
+        let appointmentsData = response.data.data || []
+        
+        // Step 7.3: Filtrer côté client par staff visible
+        if (visibleCollaboratorIds.length > 0 && visibleCollaboratorIds.length < collaborators.length) {
+          appointmentsData = appointmentsData.filter((apt: any) => 
+            !apt.staff_member_id || visibleCollaboratorIds.includes(apt.staff_member_id)
+          )
+        }
+        
+        setAppointments(appointmentsData)
       }
     } catch (error) {
       console.error('Erreur chargement rendez-vous:', error)
@@ -110,6 +203,22 @@ export default function AgendaPage() {
     // Sauvegarder dans localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('agendaTimeInterval', interval.toString())
+    }
+  }
+
+  // Step 7.3: Sauvegarder le viewMode
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('agendaViewMode', mode)
+    }
+  }
+
+  const handleStaffViewModeToggle = () => {
+    const newValue = !staffViewMode
+    setStaffViewMode(newValue)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('agendaStaffViewMode', newValue.toString())
     }
   }
 
@@ -224,7 +333,7 @@ export default function AgendaPage() {
         onPrevious={handlePrevious}
         onNext={handleNext}
         onToday={handleToday}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         onTimeIntervalChange={handleTimeIntervalChange}
         onRefresh={fetchAppointments}
         refreshing={loading}
@@ -242,27 +351,44 @@ export default function AgendaPage() {
             />
           </div>
 
-          {/* Filtres collaborateurs */}
-          {/* TEMPORAIREMENT DÉSACTIVÉ - Fonctionnalité collaborateurs en cours de développement
-          <div className="p-4 border-t border-gray-200">
-            <CollaboratorFilter
-              collaborators={collaborators}
-              visibleCollaboratorIds={visibleCollaboratorIds}
-              onVisibilityChange={setVisibleCollaboratorIds}
-            />
-          </div>
-          */}
+          {/* Filtres collaborateurs - Step 7.3 */}
+          {collaborators.length > 0 && (
+            <div className="p-4 border-t border-gray-200">
+              {/* Toggle Vue par membre */}
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Vue par membre</span>
+                <button
+                  onClick={handleStaffViewModeToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    staffViewMode ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      staffViewMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
+              <CollaboratorFilter
+                collaborators={collaborators}
+                visibleCollaboratorIds={visibleCollaboratorIds}
+                onVisibilityChange={setVisibleCollaboratorIds}
+              />
+            </div>
+          )}
 
           {/* Info aide (optionnel) */}
           <div className="mt-auto p-4 bg-blue-50 border-t border-blue-100">
             <p className="text-xs text-blue-700">
-              💡 <strong>Astuce:</strong> Cliquez sur un rendez-vous pour voir les détails complets.
+              <strong>Astuce:</strong> Cliquez sur un rendez-vous pour voir les détails complets.
             </p>
           </div>
         </aside>
 
         {/* Contenu principal: grille */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden relative">
           {loading ? (
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="text-center">
@@ -278,10 +404,33 @@ export default function AgendaPage() {
               appointments={appointments}
               visibleCollaborators={visibleCollaborators}
               onAppointmentClick={handleAppointmentClick}
+              staffViewMode={staffViewMode}
             />
           )}
+
+          {/* Bouton flottant filtres (mobile uniquement) */}
+          <button
+            onClick={() => setMobileFiltersOpen(true)}
+            className="lg:hidden fixed bottom-6 left-6 z-50 bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
+            aria-label="Ouvrir les filtres"
+          >
+            <AdjustmentsHorizontalIcon className="w-6 h-6" />
+          </button>
         </main>
       </div>
+
+      {/* Drawer filtres mobile */}
+      <MobileFiltersDrawer
+        isOpen={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        currentDate={currentDate}
+        onDateSelect={handleDateSelect}
+        collaborators={collaborators}
+        visibleCollaboratorIds={visibleCollaboratorIds}
+        onVisibilityChange={setVisibleCollaboratorIds}
+        staffViewMode={staffViewMode}
+        onStaffViewModeToggle={handleStaffViewModeToggle}
+      />
 
       {/* Modal détail rendez-vous */}
       <AppointmentDetailModal
@@ -295,6 +444,11 @@ export default function AgendaPage() {
         onCancel={handleCancelAppointment}
         onAccept={handleAcceptAppointment}
         onRefuse={handleRefuseAppointment}
+        onReassignSuccess={() => {
+          setSuccessMessage('Rendez-vous réassigné avec succès')
+          setTimeout(() => setSuccessMessage(null), 4000)
+          fetchAppointments()
+        }}
       />
 
 
@@ -309,5 +463,20 @@ export default function AgendaPage() {
         onSave={handleSaveReschedule}
       />
     </div>
+  )
+}
+
+export default function AgendaPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <AgendaContent />
+    </Suspense>
   )
 }
