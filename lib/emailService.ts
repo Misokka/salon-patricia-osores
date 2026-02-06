@@ -35,6 +35,10 @@ interface AcceptanceEmailData {
 interface RejectionEmailData {
   nom: string;
   email: string;
+  service?: string;
+  date?: string;
+  heure?: string;
+  managementUrl?: string;
 }
 
 interface CancellationEmailData {
@@ -61,6 +65,9 @@ interface RescheduleRequestData {
   newDate: string;
   newTime: string;
   rdvId: string;
+  staffChanged?: boolean;
+  oldStaffName?: string | null;
+  newStaffName?: string | null;
 }
 
 interface RescheduleConfirmationData {
@@ -69,6 +76,7 @@ interface RescheduleConfirmationData {
   service: string;
   date: string;
   heure: string;
+  managementUrl?: string;
 }
 
 interface RescheduleCancelledData {
@@ -382,6 +390,9 @@ export async function sendAcceptanceEmail(data: AcceptanceEmailData) {
  * Envoie un email de refus au client
  */
 export async function sendRejectionEmail(data: RejectionEmailData) {
+  const bookingUrl = `${getSiteUrl()}/rendezvous`;
+  const managementUrl = data.managementUrl || bookingUrl;
+
   const mailOptions = {
     from: getFromEmail(),
     replyTo: salonConfig.emails.replyTo,
@@ -389,7 +400,7 @@ export async function sendRejectionEmail(data: RejectionEmailData) {
     subject: salonConfig.emails.subjects.bookingRejected || "Votre demande de rendez-vous",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #666; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <div style="background-color: #dc3545; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
           <h2 style="color: white; margin: 0;">${salonConfig.identity.name}</h2>
         </div>
 
@@ -397,20 +408,33 @@ export async function sendRejectionEmail(data: RejectionEmailData) {
           <p style="font-size: 16px;">Bonjour <strong>${data.nom}</strong>,</p>
 
           <p style="font-size: 16px;">
-            Merci pour votre demande de rendez-vous au ${salonConfig.identity.name}.
+            Nous avons examiné votre demande de rendez-vous au ${salonConfig.identity.name}.
           </p>
 
-          <p style="font-size: 16px;">
-            Malheureusement, le créneau horaire que vous avez demandé n'est pas disponible.
-          </p>
-
-          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <p style="margin: 0; font-size: 14px;">
-              <strong>Nous vous invitons à :</strong><br/>
-              • Proposer un autre créneau via notre site<br/>
-              • Nous contacter directement par téléphone
+          <div style="background-color: #f8d7da; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+            <p style="margin: 0 0 10px 0; font-size: 14px;">
+              <strong>✗ Demande de rendez-vous refusée</strong>
             </p>
+            <p style="margin: 0; font-size: 14px;">
+              Malheureusement, le créneau horaire que vous avez demandé n'est pas disponible ou nous ne pouvons pas le confirmer.
+            </p>
+          </p>
           </div>
+
+          <p style="font-size: 16px; margin: 20px 0;">
+            <strong>Pour continuer :</strong><br/>
+            Nous vous invitons à choisir un autre créneau horaire disponible. Cliquez sur le bouton ci-dessous pour consulter nos disponibilités et proposer une nouvelle date.
+          </p>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${managementUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+              Choisir un autre créneau
+            </a>
+          </div>
+
+          <p style="font-size: 14px; color: #666;">
+            Si vous avez des questions ou souhaitez nous contacter directement, n'hésitez pas à nous appeler ou à nous envoyer un message.
+          </p>
 
           <p style="font-size: 14px; color: #666;">
             Nous espérons pouvoir vous accueillir très prochainement dans notre salon.
@@ -574,12 +598,23 @@ export async function sendRescheduleEmail(data: RescheduleRequestData) {
             <p style="margin: 8px 0; text-decoration: line-through; color: #999;">
               <strong>Rendez-vous initial :</strong><br/>
               ${formatDate(data.oldDate)} à ${formatTime(data.oldTime)}
+              ${data.oldStaffName ? `<br/>Coiffeur: ${data.oldStaffName}` : ''}
             </p>
             <p style="margin: 8px 0; color: #c4a447; font-weight: bold;">
               <strong>Nouveau créneau proposé :</strong><br/>
               ${formatDate(data.newDate)} à ${formatTime(data.newTime)}
+              ${data.staffChanged ? `<br/>Coiffeur: ${data.newStaffName || 'Aucune préférence'}` : (data.oldStaffName ? `<br/>Coiffeur: ${data.oldStaffName}` : '')}
             </p>
           </div>
+
+          ${data.staffChanged ? `
+            <div style="background-color: #e0f2fe; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0284c7;">
+              <p style="margin: 0; font-size: 14px;">
+                <strong>Changement de coiffeur :</strong><br/>
+                ${data.oldStaffName || 'Aucun coiffeur'} → ${data.newStaffName || 'Aucune préférence'}
+              </p>
+            </div>
+          ` : ''}
 
           <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
             <p style="margin: 0; font-size: 14px;">
@@ -691,6 +726,17 @@ export async function sendRescheduleConfirmationEmail(data: RescheduleConfirmati
           <p style="font-size: 14px; color: #666;">
             Nous vous attendons avec plaisir !
           </p>
+
+          ${data.managementUrl ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.managementUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
+              Gérer mon rendez-vous
+            </a>
+          </div>
+          <p style="font-size: 13px; color: #666; text-align: center;">
+            Besoin de modifier ou d'annuler ? Utilisez le bouton ci-dessus.
+          </p>
+          ` : ''}
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
             ${signatureHtml()}
@@ -875,6 +921,79 @@ export async function sendStaffChangeEmail(data: StaffChangeEmailData) {
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
             ${signatureHtml()}
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+
+/**
+ * Envoie un email au gérant quand un client refuse une modification de RDV
+ */
+export async function sendRescheduleRefusedToAdmin(data: {
+  nom: string
+  email: string
+  service: string
+  proposedDate: string
+  proposedTime: string
+  originalDate: string
+  originalTime: string
+  appointmentId?: string
+}) {
+  const adminUrl = data.appointmentId
+    ? `${getSiteUrl()}/admin/agenda?appointmentId=${data.appointmentId}`
+    : `${getSiteUrl()}/admin/rendezvous`;
+
+  const mailOptions = {
+    from: getFromEmail(),
+    replyTo: salonConfig.emails.replyTo,
+    to: salonConfig.admin.email,
+    subject: `Modification refusée - ${data.nom}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #dc3545; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h2 style="color: white; margin: 0;">Modification de rendez-vous refusée</h2>
+        </div>
+
+        <div style="background-color: #f6f2ec; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px;">
+            <strong>${data.nom}</strong> a refusé la modification de rendez-vous que vous aviez proposée.
+          </p>
+
+          <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+            <p style="margin: 8px 0;"><strong>Client :</strong> ${data.nom}</p>
+            <p style="margin: 8px 0;"><strong>Email :</strong> ${data.email}</p>
+            <p style="margin: 8px 0;"><strong>Service :</strong> ${data.service}</p>
+          </div>
+
+          <div style="background-color: #f8d7da; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+            <p style="margin: 0 0 10px 0; font-weight: bold;">Créneau proposé (refusé) :</p>
+            <p style="margin: 0;"><strong>Date:</strong> ${formatDate(data.proposedDate)}</p>
+            <p style="margin: 0;"><strong>Heure:</strong> ${formatTime(data.proposedTime)}</p>
+          </div>
+
+          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <p style="margin: 0 0 10px 0; font-weight: bold;">Créneau initial (maintenu) :</p>
+            <p style="margin: 0;"><strong>Date:</strong> ${formatDate(data.originalDate)}</p>
+            <p style="margin: 0;"><strong>Heure:</strong> ${formatTime(data.originalTime)}</p>
+          </div>
+
+          <div style="background-color: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196F3;">
+            <p style="margin: 0; font-size: 14px;">
+              <strong>Le rendez-vous a été annulé</strong><br/>
+              Le client n'a pas accepté le nouveau créneau. Le rendez-vous original a été annulé et les créneaux horaires ont été libérés.<br/>
+              Le client peut reprendre rendez-vous si nécessaire.
+            </p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${adminUrl}" style="display: inline-block; background-color: #c4a447; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+              Voir dans l'agenda
+            </a>
           </div>
         </div>
       </div>

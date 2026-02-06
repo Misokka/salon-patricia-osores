@@ -1,11 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { usePublicSchedule } from '@/lib/hooks/usePublicSchedule'
 
-import type { Service, ServiceCategoryWithServices } from '@/types/service'
+import type { Service } from '@/types/service'
 import type { ServiceSelection } from '@/types/service-selection'
 
 interface Category {
@@ -14,8 +15,9 @@ interface Category {
   services: Service[]
 }
 
-export default function ServicesPage() {
+function ServicesPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { formatted: horaires, loading: loadingHoraires } = usePublicSchedule()
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -24,26 +26,8 @@ export default function ServicesPage() {
   // Accordion: 1 seule catégorie ouverte
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await axios.get('/api/services/categories')
-        if (response.data.success) {
-          const cats: Category[] = response.data.data.categories || []
-          setCategories(cats)
-
-          // Ouvrir la première catégorie par défaut
-          if (cats.length > 0) setOpenCategoryId(cats[0].id)
-        }
-      } catch (error) {
-        console.error('Erreur chargement services:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchServices()
-  }, [])
+  // Pour éviter de traiter le paramètre plusieurs fois
+  const serviceParamProcessed = useRef(false)
 
   const formatPrice = (service: Service) => {
     if (service.price_type === 'quote') return 'Sur devis'
@@ -66,6 +50,45 @@ export default function ServicesPage() {
 
     router.push('/rendezvous/date')
   }
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await axios.get('/api/services/categories')
+        if (response.data.success) {
+          const cats: Category[] = response.data.data.categories || []
+          setCategories(cats)
+
+          // Ouvrir la première catégorie par défaut
+          if (cats.length > 0) setOpenCategoryId(cats[0].id)
+        }
+      } catch (error) {
+        console.error('Erreur chargement services:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchServices()
+  }, [])
+
+  // Auto-sélection du service si paramètre ?service=xxx présent
+  useEffect(() => {
+    if (loading || serviceParamProcessed.current) return
+
+    const serviceId = searchParams.get('service')
+    if (!serviceId) return
+
+    // Chercher le service dans toutes les catégories
+    for (const category of categories) {
+      const service = category.services.find(s => s.id === serviceId)
+      if (service) {
+        serviceParamProcessed.current = true
+        handleSelectService(service)
+        return
+      }
+    }
+  }, [loading, categories, searchParams])
 
 
   return (
@@ -111,9 +134,9 @@ export default function ServicesPage() {
                       className="bg-white rounded-lg shadow-md overflow-hidden"
                       onToggle={(e) => {
                         const target = e.currentTarget
-                        // Si l’utilisateur ouvre celui-ci => on ferme les autres
+                        // Si l'utilisateur ouvre celui-ci => on ferme les autres
                         if (target.open) setOpenCategoryId(category.id)
-                        // Si l’utilisateur le ferme => aucun ouvert
+                        // Si l'utilisateur le ferme => aucun ouvert
                         else if (openCategoryId === category.id) setOpenCategoryId(null)
                       }}
                     >
@@ -221,5 +244,22 @@ export default function ServicesPage() {
         }
       `}</style>
     </main>
+  )
+}
+
+export default function ServicesPage() {
+  return (
+    <Suspense fallback={
+      <main className="bg-light min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-gray-300 border-t-primary" />
+            <p className="mt-4 text-sm text-gray-600">Chargement...</p>
+          </div>
+        </div>
+      </main>
+    }>
+      <ServicesPageContent />
+    </Suspense>
   )
 }

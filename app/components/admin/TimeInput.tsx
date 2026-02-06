@@ -205,11 +205,6 @@ export default function TimeInput({
             <ChevronDownIcon className="w-4 h-4 text-gray-600" />
           </button>
         </div>
-
-        <div className="ml-2 text-xs text-gray-500">
-          <div>↑↓ pour ajuster</div>
-          <div>Par pas de 5 min</div>
-        </div>
       </div>
     </div>
   )

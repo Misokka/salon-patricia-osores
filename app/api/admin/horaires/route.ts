@@ -181,13 +181,68 @@ export async function DELETE(request: Request) {
       )
     }
 
+    // Récupérer les infos de la plage horaire avant suppression
+    const { data: timeRange, error: rangeError } = await supabaseAdmin
+      .from('opening_time_ranges')
+      .select('*')
+      .eq('id', id)
+      .eq('salon_id', salonId)
+      .single()
+
+    if (rangeError || !timeRange) {
+      return NextResponse.json(
+        { success: false, error: 'Time range not found' },
+        { status: 404 }
+      )
+    }
+
+    // Supprimer les créneaux associés (futurs uniquement)
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Récupérer tous les créneaux futurs
+    const { data: allSlots, error: slotsError } = await supabaseAdmin
+      .from('time_slots')
+      .select('id, slot_date, start_time')
+      .eq('salon_id', salonId)
+      .gte('slot_date', today)
+
+    if (slotsError) throw slotsError
+
+    // Filtrer pour ne garder que les créneaux du bon jour de la semaine et de la bonne plage horaire
+    const slotsToDelete = (allSlots || []).filter(slot => {
+      const slotDate = new Date(slot.slot_date)
+      const slotDayOfWeek = (slotDate.getDay() + 6) % 7
+      
+      if (slotDayOfWeek !== timeRange.day_of_week) return false
+      
+      const slotTime = slot.start_time
+      return slotTime >= timeRange.start_time && slotTime < timeRange.end_time
+    })
+
+    // Supprimer les créneaux
+    if (slotsToDelete.length > 0) {
+      const slotIds = slotsToDelete.map(s => s.id)
+      const { error: deleteSlotError } = await supabaseAdmin
+        .from('time_slots')
+        .delete()
+        .in('id', slotIds)
+
+      if (deleteSlotError) throw deleteSlotError
+    }
+
+    // Supprimer la plage horaire
     const { error } = await supabaseAdmin
       .from('opening_time_ranges')
       .delete()
       .eq('id', id)
 
     if (error) throw error
-    return NextResponse.json({ success: true })
+    
+    return NextResponse.json({
+      success: true,
+      message: `Plage supprimée avec ${slotsToDelete.length} créneau(x)`,
+      deletedSlots: slotsToDelete.length,
+    })
   } catch (error) {
     console.error('[API /api/admin/horaires DELETE]', error)
     return NextResponse.json(

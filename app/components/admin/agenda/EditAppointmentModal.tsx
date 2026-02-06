@@ -13,7 +13,7 @@ interface EditAppointmentModalProps {
   isOpen: boolean
   onClose: () => void
   appointment: Appointment | null
-  onSave: (id: string, newDate: string, newTime: string) => Promise<void>
+  onSave: (id: string, newDate: string, newTime: string, newStaffId?: string | null) => Promise<void>
 }
 
 interface Disponibilite {
@@ -21,6 +21,11 @@ interface Disponibilite {
   date: string
   heure: string
   est_disponible: boolean
+}
+
+interface StaffMember {
+  id: string
+  name: string
 }
 
 export default function EditAppointmentModal({
@@ -31,10 +36,12 @@ export default function EditAppointmentModal({
 }: EditAppointmentModalProps) {
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [availableSlots, setAvailableSlots] = useState<Disponibilite[]>([])
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
 
   // Initialiser les champs quand l'appointment change
   useEffect(() => {
@@ -43,10 +50,26 @@ export default function EditAppointmentModal({
       const dateStr = format(startDate, 'yyyy-MM-dd')
       setSelectedDate(dateStr)
       setSelectedTime(format(startDate, 'HH:mm'))
+      setSelectedStaffId(appointment.staff_member_id || null)
       setError(null)
       fetchAvailableSlots(dateStr)
     }
   }, [appointment])
+
+  // Charger la liste des membres d'équipe
+  useEffect(() => {
+    const fetchStaffMembers = async () => {
+      try {
+        const response = await apiClient.get('/api/public/staff-members')
+        setStaffMembers(response.data?.data || [])
+      } catch (err) {
+        console.error('Erreur chargement staff:', err)
+      }
+    }
+    if (isOpen) {
+      fetchStaffMembers()
+    }
+  }, [isOpen])
 
   // Recharger créneaux quand date change
   useEffect(() => {
@@ -107,7 +130,7 @@ export default function EditAppointmentModal({
     setError(null)
 
     try {
-      await onSave(appointment.id, selectedDate, selectedTime)
+      await onSave(appointment.id, selectedDate, selectedTime, selectedStaffId)
       onClose()
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la modification du rendez-vous')
@@ -121,7 +144,12 @@ export default function EditAppointmentModal({
   const originalDate = new Date(appointment.start_time)
   const hasChanged =
     selectedDate !== format(originalDate, 'yyyy-MM-dd') ||
-    selectedTime !== format(originalDate, 'HH:mm')
+    selectedTime !== format(originalDate, 'HH:mm') ||
+    selectedStaffId !== (appointment.staff_member_id || null)
+  
+  const staffChanged = selectedStaffId !== (appointment.staff_member_id || null)
+  const oldStaffName = appointment.staff_member_name || 'Aucun coiffeur assigné'
+  const newStaffName = staffMembers.find(s => s.id === selectedStaffId)?.name || 'Aucun coiffeur assigné'
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -177,6 +205,30 @@ export default function EditAppointmentModal({
                       <span className="text-sm font-medium text-gray-700">Service</span>
                       <span className="text-sm text-gray-900">{appointment.service_name}</span>
                     </div>
+                  </div>
+
+                  {/* Coiffeur */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Coiffeur assigné
+                    </label>
+                    <select
+                      value={selectedStaffId || ''}
+                      onChange={(e) => setSelectedStaffId(e.target.value || null)}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+                    >
+                      <option value="">Aucune préférence</option>
+                      {staffMembers.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.name}
+                        </option>
+                      ))}
+                    </select>
+                    {staffChanged && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Changement: {oldStaffName} → {newStaffName}
+                      </p>
+                    )}
                   </div>
 
                   {/* Date */}
@@ -253,7 +305,7 @@ export default function EditAppointmentModal({
                   {hasChanged && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                       <p className="text-sm text-amber-800">
-                        <strong>Important :</strong> Un email sera envoyé au client pour l'informer du changement et lui demander de valider le nouveau créneau.
+                        <strong>Important :</strong> Un email sera envoyé au client pour l'informer du changement{staffChanged && ' de coiffeur'} et lui demander de valider le nouveau créneau.
                       </p>
                     </div>
                   )}

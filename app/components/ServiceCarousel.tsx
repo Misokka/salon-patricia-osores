@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-import Image from 'next/image'
 import { fadeUp, scrollRevealProps } from '@/lib/animations'
 
 import type { CarouselService } from '@/types/carousel-service'
@@ -129,33 +129,33 @@ export default function ServiceCarousel({ services }: ServiceCarouselProps) {
                 className="px-7 flex-shrink-0"
                 style={{ width: `${100 / cardsPerView}%` }}
               >
-                <motion.div
-                  whileHover={{ y: -6 }}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition h-full flex flex-col"
-                >
-
-
-                  {/* CONTENT */}
-                  <div className="p-5 flex flex-col flex-1">
-                    <span className="text-xs text-accent mb-2">
-                      {service.category_name}
-                    </span>
-
-                    <h4 className="text-lg font-semibold mb-2">
-                      {service.name}
-                    </h4>
-
-                    <p className="text-sm text-gray-600 mb-4">
-                      {service.duration_label}
-                    </p>
-
-                    <div className="mt-auto pt-3 border-t">
-                      <span className="text-primary font-semibold">
-                        {service.price_label}
+                <Link href={`/rendezvous?service=${service.id}`}>
+                  <motion.div
+                    whileHover={{ y: -6 }}
+                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition h-full flex flex-col cursor-pointer"
+                  >
+                    {/* CONTENT */}
+                    <div className="p-5 flex flex-col flex-1">
+                      <span className="text-xs text-accent mb-2">
+                        {service.category_name}
                       </span>
+
+                      <h4 className="text-lg font-semibold mb-2 group-hover:text-primary transition">
+                        {service.name}
+                      </h4>
+
+                      <p className="text-sm text-gray-600 mb-4">
+                        {service.duration_label}
+                      </p>
+
+                      <div className="mt-auto pt-3 border-t">
+                        <span className="text-primary font-semibold">
+                          {service.price_label}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </Link>
               </div>
             ))}
           </div>

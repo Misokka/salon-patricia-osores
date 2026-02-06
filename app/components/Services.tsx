@@ -153,7 +153,7 @@ export default function Services() {
             {featuredServices.map(service => (
               <motion.a
                 key={service.id}
-                href="#rendezvous"
+                href={`/rendezvous?service=${service.id}`}
                 variants={staggerItem}
                 whileHover={hoverLift}
                 className="group rounded-2xl overflow-hidden shadow-md hover:shadow-xl bg-white transition-all duration-300 flex flex-col h-full"

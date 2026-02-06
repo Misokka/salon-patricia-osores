@@ -17,6 +17,8 @@ export interface Appointment {
   created_at?: string
   status: AppointmentStatus
   notes?: string | null
+  staff_member_id?: string
+  staff_member_name?: string
 }
 
 export interface AppointmentWithDetails extends Appointment {

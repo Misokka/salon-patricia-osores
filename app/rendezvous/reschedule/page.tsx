@@ -15,6 +15,9 @@ interface RescheduleData {
   oldTime: string
   newDate: string
   newTime: string
+  staffChanged?: boolean
+  oldStaffName?: string | null
+  newStaffName?: string | null
 }
 
 function RescheduleClient() {
@@ -237,6 +240,14 @@ function RescheduleClient() {
               <FaClock className="text-gray-400" />
               <span className="text-gray-600">{data?.oldTime}</span>
             </div>
+            {data?.oldStaffName && (
+              <div className="flex items-center gap-3 mt-2 opacity-60 line-through">
+                <div className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs">
+                  {data.oldStaffName.charAt(0)}
+                </div>
+                <span className="text-gray-600 text-sm">{data.oldStaffName}</span>
+              </div>
+            )}
           </div>
 
           {/* Nouveau créneau */}
@@ -252,10 +263,28 @@ function RescheduleClient() {
               <FaClock className="text-green-600" />
               <span className="text-gray-900 font-semibold">{data?.newTime}</span>
             </div>
+            {data?.newStaffName && (
+              <div className="flex items-center gap-3 mt-2">
+                <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-xs">
+                  {data.newStaffName.charAt(0)}
+                </div>
+                <span className="text-gray-900 text-sm font-semibold">{data.newStaffName}</span>
+              </div>
+            )}
             <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-green-200">
               {data?.service}
             </p>
           </div>
+
+          {/* Info changement de coiffeur */}
+          {data?.staffChanged && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>Changement de coiffeur :</strong><br/>
+                {data.oldStaffName || 'Aucun coiffeur'} → {data.newStaffName || 'Aucune préférence'}
+              </p>
+            </div>
+          )}
 
           {/* Message d'information */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">

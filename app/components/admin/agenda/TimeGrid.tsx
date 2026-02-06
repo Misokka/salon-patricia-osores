@@ -384,11 +384,11 @@ export default function TimeGrid({
                         className="absolute left-0 z-20 pointer-events-none"
                         style={{ 
                           top: `${currentTimePosition}px`,
-                          right: `-${(staffToShow.length - 1) * 100 + (staffToShow.length - 1) * 2}px`
+                          width: `calc(100% * ${staffToShow.length})`
                         }}
                       >
                         <div className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-red-500 rounded-full" />
-                        <div className="h-0.5 bg-red-500" style={{ width: `${staffToShow.length * 100 + 100}px` }} />
+                        <div className="h-0.5 bg-red-500 w-full" />
                       </div>
                     )}
 
@@ -442,11 +442,11 @@ export default function TimeGrid({
                   {/* Indicateur heure actuelle (uniquement pour aujourd'hui) */}
                   {isColumnToday && showCurrentTimeIndicator && (
                     <div
-                      className="absolute left-0 right-0 z-20 pointer-events-none"
-                      style={{ top: `${currentTimePosition}px` }}
+                      className="absolute left-0 z-20 pointer-events-none"
+                      style={{ top: `${currentTimePosition}px`, width: '100%' }}
                     >
                       <div className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-red-500 rounded-full" />
-                      <div className="h-0.5 bg-red-500" />
+                      <div className="h-0.5 bg-red-500 w-full" />
                     </div>
                   )}
 

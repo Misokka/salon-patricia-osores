@@ -277,12 +277,13 @@ function AgendaContent() {
   }
 
 
-  const handleSaveReschedule = async (id: string, newDate: string, newTime: string) => {
+  const handleSaveReschedule = async (id: string, newDate: string, newTime: string, newStaffId?: string | null) => {
     try {
       const response = await axios.patch('/api/admin/agenda/reschedule', {
         id,
         newDate,
         newTime,
+        newStaffId,
       })
 
       if (response.data.success) {

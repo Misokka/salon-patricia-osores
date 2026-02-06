@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { sendRescheduleConfirmationEmail, sendRescheduleCancelledEmail, sendRescheduleAcceptedToAdmin } from '@/lib/emailService'
+import { sendRescheduleConfirmationEmail, sendRescheduleCancelledEmail, sendRescheduleAcceptedToAdmin, sendRescheduleRefusedToAdmin } from '@/lib/emailService'
 import salonConfig from '@/config/salon.config'
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,12 +75,15 @@ export async function POST(req: NextRequest) {
 
       // Envoyer email de confirmation au client
       try {
+        const managementUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/rendezvous/manage?id=${rdv.id}&token=${rdv.management_token}`
+        
         await sendRescheduleConfirmationEmail({
           nom: rdv.customer_name,
           email: rdv.customer_email,
           date: rdv.proposed_date,
           heure: rdv.proposed_start_time,
           service: serviceName,
+          managementUrl,
         })
 
         // Envoyer email à l'admin pour l'informer de l'acceptation
@@ -143,7 +145,7 @@ export async function POST(req: NextRequest) {
 
       const serviceName = serviceData?.name || 'Service'
 
-      // Envoyer email d'annulation
+      // Envoyer email d'annulation au client
       try {
         await sendRescheduleCancelledEmail({
           nom: rdv.customer_name,
@@ -151,6 +153,18 @@ export async function POST(req: NextRequest) {
           date: rdv.appointment_date,
           heure: rdv.start_time,
           service: serviceName,
+        })
+
+        // Envoyer email à l'admin pour l'informer du refus
+        await sendRescheduleRefusedToAdmin({
+          nom: rdv.customer_name,
+          email: rdv.customer_email,
+          service: serviceName,
+          proposedDate: rdv.proposed_date,
+          proposedTime: rdv.proposed_start_time,
+          originalDate: rdv.appointment_date,
+          originalTime: rdv.start_time,
+          appointmentId: rdv.id,
         })
       } catch (emailError) {
       }

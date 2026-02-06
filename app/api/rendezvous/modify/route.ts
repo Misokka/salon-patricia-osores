@@ -43,7 +43,7 @@ export async function POST(request: Request) {
           name,
           duration_minutes
         ),
-        staff_members (
+        staff_members:staff_member_id (
           id,
           name
         )

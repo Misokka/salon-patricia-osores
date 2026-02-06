@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
           duration_minutes,
           price_value
         ),
-        staff_members (
+        staff_members:staff_member_id (
           id,
           name
         )
@@ -106,6 +106,7 @@ export async function GET(req: NextRequest) {
       appointment_date: appointment.appointment_date,
       start_time: appointment.start_time,
       status: appointment.status,
+      staff_member_id: staffData?.id,
       staff_member_name: staffData?.name
     }
 

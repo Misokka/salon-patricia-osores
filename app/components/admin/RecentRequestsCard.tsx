@@ -24,7 +24,7 @@ export default function RecentRequestsCard({ request, onActionComplete }: Props)
 
     try {
       setIsUpdating(true)
-      await apiClient.patch(`/api/admin/rendezvous/${request.id}`, { status })
+      await apiClient.patch('/api/admin/rendezvous', { id: request.id, status })
       onActionComplete?.()
     } catch (error) {
       console.error('Erreur mise à jour RDV:', error)

@@ -14,7 +14,8 @@ import {
 import { Dialog, Transition } from '@headlessui/react'
 import TimeRangeModal, { type TimeRangeFormData } from './TimeRangeModal'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
+import { fr } from 'date-fns/locale'
 
 const DAYS_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
@@ -57,6 +58,13 @@ export default function HorairesAdmin() {
   const [confirmDelete, setConfirmDelete] = useState<{
     isOpen: boolean
     id?: string
+    slotsInfo?: {
+      totalSlots: number
+      availableSlots: number
+      bookedSlots: number
+      firstDate: string | null
+      lastDate: string | null
+    }
   }>({ isOpen: false })
 
   // Modal duplication
@@ -181,32 +189,80 @@ export default function HorairesAdmin() {
         }
       } else {
         // Création
-        const res = await apiClient.post(`/api/admin/horaires`, {
-          type: 'range',
-          data: {
-            day_of_week: dayOfWeek,
-            start_time: data.start_time,
-            end_time: data.end_time,
-            slot_frequency_minutes: data.slot_frequency_minutes,
-            generation_start_date: data.generate_slots ? format(new Date(), 'yyyy-MM-dd') : null,
-            generation_end_date: data.generate_slots ? data.generation_end_date : null,
-          },
-        })
+        if (data.has_break && data.break_start && data.break_end) {
+          // Créer DEUX plages horaires : matin et après-midi
+          const morningRes = await apiClient.post(`/api/admin/horaires`, {
+            type: 'range',
+            data: {
+              day_of_week: dayOfWeek,
+              start_time: data.start_time,
+              end_time: data.break_start,
+              slot_frequency_minutes: data.slot_frequency_minutes,
+            },
+          })
 
-        if (res.data.success) {
-          setTimeRanges((prev) => [...prev, res.data.data])
-          setTimeRangeModal({ isOpen: false })
-          showMessage('success', 'Plage horaire créée')
+          const afternoonRes = await apiClient.post(`/api/admin/horaires`, {
+            type: 'range',
+            data: {
+              day_of_week: dayOfWeek,
+              start_time: data.break_end,
+              end_time: data.end_time,
+              slot_frequency_minutes: data.slot_frequency_minutes,
+            },
+          })
 
-          // Générer les créneaux si demandé
-          if (data.generate_slots && data.generation_end_date) {
-            await generateSlots(
-              dayOfWeek,
-              data.start_time,
-              data.end_time,
-              data.slot_frequency_minutes,
-              data.generation_end_date
-            )
+          if (morningRes.data.success && afternoonRes.data.success) {
+            setTimeRanges((prev) => [...prev, morningRes.data.data, afternoonRes.data.data])
+            setTimeRangeModal({ isOpen: false })
+            showMessage('success', 'Plages horaires créées avec pause déjeuner')
+
+            // Générer les créneaux pour les deux plages si demandé
+            if (data.generate_slots && data.generation_end_date) {
+              await generateSlots(
+                dayOfWeek,
+                data.start_time,
+                data.break_start,
+                data.slot_frequency_minutes,
+                data.generation_end_date
+              )
+              await generateSlots(
+                dayOfWeek,
+                data.break_end,
+                data.end_time,
+                data.slot_frequency_minutes,
+                data.generation_end_date
+              )
+            }
+          }
+        } else {
+          // Création normale (sans pause)
+          const res = await apiClient.post(`/api/admin/horaires`, {
+            type: 'range',
+            data: {
+              day_of_week: dayOfWeek,
+              start_time: data.start_time,
+              end_time: data.end_time,
+              slot_frequency_minutes: data.slot_frequency_minutes,
+              generation_start_date: data.generate_slots ? format(new Date(), 'yyyy-MM-dd') : null,
+              generation_end_date: data.generate_slots ? data.generation_end_date : null,
+            },
+          })
+
+          if (res.data.success) {
+            setTimeRanges((prev) => [...prev, res.data.data])
+            setTimeRangeModal({ isOpen: false })
+            showMessage('success', 'Plage horaire créée')
+
+            // Générer les créneaux si demandé
+            if (data.generate_slots && data.generation_end_date) {
+              await generateSlots(
+                dayOfWeek,
+                data.start_time,
+                data.end_time,
+                data.slot_frequency_minutes,
+                data.generation_end_date
+              )
+            }
           }
         }
       }
@@ -248,8 +304,27 @@ export default function HorairesAdmin() {
     }
   }
 
+  // Vérifier les créneaux avant suppression
+  const handleDeleteTimeRangeClick = async (id: string) => {
+    try {
+      // Récupérer les infos sur les créneaux qui seront supprimés
+      const res = await apiClient.get(`/api/admin/horaires/check-slots?rangeId=${id}`)
+      
+      if (res.data.success) {
+        setConfirmDelete({
+          isOpen: true,
+          id,
+          slotsInfo: res.data.data,
+        })
+      }
+    } catch (err) {
+      console.error('Erreur vérification créneaux:', err)
+      showMessage('error', 'Erreur lors de la vérification')
+    }
+  }
+
   // Supprimer une plage horaire
-  const handleDeleteTimeRange = async () => {
+  const confirmDeleteTimeRange = async () => {
     const id = confirmDelete.id
     if (!id) return
 
@@ -260,7 +335,9 @@ export default function HorairesAdmin() {
       if (res.data.success) {
         setTimeRanges((prev) => prev.filter((r) => r.id !== id))
         setConfirmDelete({ isOpen: false })
-        showMessage('success', 'Plage supprimée')
+        
+        const message = res.data.message || 'Plage supprimée'
+        showMessage('success', message)
       }
     } catch (err) {
       showMessage('error', 'Erreur lors de la suppression')
@@ -540,9 +617,7 @@ export default function HorairesAdmin() {
                           <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() =>
-                            setConfirmDelete({ isOpen: true, id: range.id })
-                          }
+                            onClick={() => handleDeleteTimeRangeClick(range.id)}
                           disabled={deletingId === range.id}
                           className="p-1.5 text-gray-600 hover:bg-red-100 hover:text-red-600 rounded transition-colors disabled:opacity-50"
                           title="Supprimer"
@@ -581,9 +656,59 @@ export default function HorairesAdmin() {
       <ConfirmDeleteModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false })}
-        onConfirm={handleDeleteTimeRange}
+        onConfirm={confirmDeleteTimeRange}
         title="Supprimer cette plage horaire ?"
-        message="Cette action est irréversible. La plage horaire sera définitivement supprimée."
+        message={
+          confirmDelete.slotsInfo ? (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                Cette action supprimera définitivement la plage horaire et les créneaux associés.
+              </p>
+              
+              {confirmDelete.slotsInfo.totalSlots > 0 ? (
+                <>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-red-900 mb-2">
+                      <strong>{confirmDelete.slotsInfo.totalSlots} créneau(x)</strong> sera/seront supprimé(s)
+                    </p>
+                    <ul className="text-xs text-red-700 space-y-1">
+                      <li>• {confirmDelete.slotsInfo.availableSlots} créneau(x) disponible(s)</li>
+                      {confirmDelete.slotsInfo.bookedSlots > 0 && (
+                        <li className="font-semibold">• ⚠️ {confirmDelete.slotsInfo.bookedSlots} créneau(x) déjà réservé(s)</li>
+                      )}
+                    </ul>
+                  </div>
+                  
+                  {confirmDelete.slotsInfo.firstDate && confirmDelete.slotsInfo.lastDate && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <p className="text-xs text-gray-600">
+                        <strong>Période concernée :</strong><br/>
+                        Du {format(parseISO(confirmDelete.slotsInfo.firstDate), 'd MMMM yyyy', { locale: fr })}<br/>
+                        au {format(parseISO(confirmDelete.slotsInfo.lastDate), 'd MMMM yyyy', { locale: fr })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {confirmDelete.slotsInfo.bookedSlots > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-xs text-amber-800">
+                        <strong>⚠️ Attention :</strong> Des créneaux sont déjà réservés. Assurez-vous de contacter les clients concernés avant de supprimer cette plage horaire.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    Aucun créneau futur associé à cette plage horaire.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            "Cette action est irréversible. La plage horaire sera définitivement supprimée."
+          )
+        }
         isLoading={deletingId !== null}
       />
 

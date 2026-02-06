@@ -108,7 +108,7 @@ export default function NextAppointmentCard({ appointment }: NextAppointmentCard
 
       {/* Action */}
       <Link
-        href={`/admin/rendezvous`}
+        href={`/admin/agenda?appointmentId=${appointment.id}`}
         className="w-full flex items-center justify-center space-x-2 px-5 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
       >
         <span>Voir le rendez-vous</span>

@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyAdminAuth } from '../../../../lib/auth/verifyAdmin'
 import { addDays, addMinutes, format, parse, parseISO } from 'date-fns'
+import { sendExceptionalClosureEmail, sendRejectionEmail, getSiteUrl } from '../../../../lib/emailService'
 
 /**
  * GET – Récupère tous les horaires exceptionnels
@@ -67,12 +68,13 @@ export async function POST(request: Request) {
           customer_email,
           appointment_date,
           start_time,
+          status,
           services!inner(name)
         `)
         .eq('salon_id', salonId)
         .gte('appointment_date', start_date)
         .lte('appointment_date', end_date)
-        .eq('status', 'accepted')
+        .in('status', ['pending', 'accepted'])
 
       if (appointments?.length) {
         return NextResponse.json(
@@ -86,6 +88,7 @@ export async function POST(request: Request) {
               service: a.services?.name ?? 'Service',
               date: a.appointment_date,
               heure: a.start_time,
+              status: a.status,
             })),
           },
           { status: 409 }
@@ -108,16 +111,27 @@ export async function POST(request: Request) {
     if (error) throw error
 
     if (type === 'closed' && confirm_cancel_appointments) {
+      // Récupérer tous les rendez-vous (pending et accepted) avec leurs détails pour les emails
       const { data: appointments } = await supabaseAdmin
         .from('appointments')
-        .select(`id`)
+        .select(`
+          id,
+          status,
+          customer_name,
+          customer_email,
+          appointment_date,
+          start_time,
+          services!inner(name)
+        `)
         .eq('salon_id', salonId)
         .gte('appointment_date', start_date)
         .lte('appointment_date', end_date)
-        .eq('status', 'accepted')
+        .in('status', ['pending', 'accepted'])
 
       if (appointments?.length) {
         const appointmentIds = appointments.map(a => a.id)
+        const pendingAppointments = appointments.filter(a => a.status === 'pending')
+        const acceptedAppointments = appointments.filter(a => a.status === 'accepted')
         
         // Libérer les créneaux associés aux rendez-vous annulés
         const { data: slotsToFree } = await supabaseAdmin
@@ -131,14 +145,62 @@ export async function POST(request: Request) {
             .from('time_slots')
             .update({ is_available: true })
             .in('id', slotIds)
-          
         }
 
-        // Annuler les rendez-vous
-        await supabaseAdmin
-          .from('appointments')
-          .update({ status: 'cancelled' })
-          .in('id', appointmentIds)
+        // Refuser les rendez-vous en attente
+        if (pendingAppointments.length > 0) {
+          const pendingIds = pendingAppointments.map(a => a.id)
+          await supabaseAdmin
+            .from('appointments')
+            .update({ status: 'refused' })
+            .in('id', pendingIds)
+
+          // Envoyer emails de refus
+          for (const apt of pendingAppointments) {
+            if (apt.customer_email) {
+              try {
+                await sendRejectionEmail({
+                  nom: apt.customer_name,
+                  email: apt.customer_email,
+                  service: (apt as any).services?.name ?? 'Service',
+                  date: apt.appointment_date,
+                  heure: apt.start_time,
+                  managementUrl: `${getSiteUrl()}/rendezvous`,
+                })
+              } catch (emailError) {
+                console.error(`Erreur envoi email refus pour ${apt.customer_email}:`, emailError)
+              }
+            }
+          }
+        }
+
+        // Annuler les rendez-vous acceptés
+        if (acceptedAppointments.length > 0) {
+          const acceptedIds = acceptedAppointments.map(a => a.id)
+          await supabaseAdmin
+            .from('appointments')
+            .update({ status: 'cancelled' })
+            .in('id', acceptedIds)
+
+          // Envoyer emails d'annulation avec raison
+          const closureReason = reason || 'Fermeture exceptionnelle du salon'
+          for (const apt of acceptedAppointments) {
+            if (apt.customer_email) {
+              try {
+                await sendExceptionalClosureEmail({
+                  nom: apt.customer_name,
+                  email: apt.customer_email,
+                  service: (apt as any).services?.name ?? 'Service',
+                  date: apt.appointment_date,
+                  heure: apt.start_time,
+                  reason: closureReason,
+                })
+              } catch (emailError) {
+                console.error(`Erreur envoi email annulation pour ${apt.customer_email}:`, emailError)
+              }
+            }
+          }
+        }
       }
 
       const { data: slots } = await supabaseAdmin

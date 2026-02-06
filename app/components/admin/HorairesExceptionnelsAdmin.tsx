@@ -394,8 +394,9 @@ export default function HorairesExceptionnelsAdmin() {
                   Rendez-vous existants détectés
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-600 mb-3">
-                  <strong>{cancelAppointmentsModal.appointments.length} rendez-vous confirmé(s)</strong> existe(nt) sur cette période.
-                  Si vous continuez, ces rendez-vous seront <strong>annulés</strong> et les clients recevront un email de notification.
+                  <strong>{cancelAppointmentsModal.appointments.length} rendez-vous</strong> existe(nt) sur cette période.
+                  Si vous continuez, les demandes en attente seront <strong>refusées</strong> et les rendez-vous confirmés seront <strong>annulés</strong>. 
+                  Les clients recevront un email de notification.
                 </p>
               </div>
             </div>
@@ -403,22 +404,35 @@ export default function HorairesExceptionnelsAdmin() {
             {/* Liste des RDV */}
             <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 max-h-60 overflow-y-auto">
               <h4 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                Rendez-vous qui seront annulés :
+                Rendez-vous qui seront traités :
               </h4>
               <div className="space-y-2">
                 {cancelAppointmentsModal.appointments.map((rdv) => {
                   const formattedDate = format(parseISO(rdv.date), 'EEEE d MMMM yyyy', { locale: fr })
                   const formattedTime = rdv.heure.substring(0, 5)
+                  const isPending = rdv.status === 'pending'
                   
                   return (
-                    <div key={rdv.id} className="bg-white rounded-md p-2 sm:p-3 text-xs sm:text-sm">
-                      <p className="font-medium text-gray-900">{rdv.nom}</p>
-                      <p className="text-gray-600">
-                        {rdv.service} • {formattedDate} à {formattedTime}
-                      </p>
-                      {rdv.email && (
-                        <p className="text-xs text-gray-500 mt-1">{rdv.email}</p>
-                      )}
+                    <div key={rdv.id} className="bg-white rounded-md p-2 sm:p-3 text-xs sm:text-sm border-l-4" 
+                         style={{ borderLeftColor: isPending ? '#f59e0b' : '#dc2626' }}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900">{rdv.nom}</p>
+                          <p className="text-gray-600">
+                            {rdv.service} • {formattedDate} à {formattedTime}
+                          </p>
+                          {rdv.email && (
+                            <p className="text-xs text-gray-500 mt-1">{rdv.email}</p>
+                          )}
+                        </div>
+                        <span className={`flex-shrink-0 px-2 py-1 rounded text-xs font-medium ${
+                          isPending 
+                            ? 'bg-amber-100 text-amber-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {isPending ? 'À refuser' : 'À annuler'}
+                        </span>
+                      </div>
                     </div>
                   )
                 })}
@@ -427,8 +441,9 @@ export default function HorairesExceptionnelsAdmin() {
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
               <p className="text-xs sm:text-sm text-amber-800">
-                <strong>Action irréversible :</strong> Les clients recevront automatiquement un email d'annulation
-                et pourront reprendre rendez-vous en ligne.
+                <strong>Action irréversible :</strong> Les clients recevront automatiquement un email 
+                (refus pour les demandes en attente, annulation pour les rendez-vous confirmés).
+                Ils pourront reprendre rendez-vous en ligne.
               </p>
             </div>
 
@@ -444,7 +459,7 @@ export default function HorairesExceptionnelsAdmin() {
                 disabled={isSubmitting}
                 className="flex-1 px-4 py-2 text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? 'Annulation en cours...' : `Confirmer et annuler ${cancelAppointmentsModal.appointments.length} RDV`}
+                {isSubmitting ? 'Traitement en cours...' : `Confirmer et traiter ${cancelAppointmentsModal.appointments.length} RDV`}
               </button>
             </div>
           </motion.div>

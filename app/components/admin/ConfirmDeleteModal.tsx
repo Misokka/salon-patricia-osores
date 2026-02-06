@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment } from 'react'
+import { Fragment, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
@@ -9,7 +9,7 @@ interface ConfirmDeleteModalProps {
   onClose: () => void
   onConfirm: () => void
   title: string
-  message: string
+  message: string | ReactNode
   confirmLabel?: string
   isLoading?: boolean
 }
@@ -61,7 +61,7 @@ export default function ConfirmDeleteModal({
                     <Dialog.Title className="text-base sm:text-lg font-semibold text-gray-900">
                       {title}
                     </Dialog.Title>
-                    <p className="mt-2 text-xs sm:text-sm text-gray-600">{message}</p>
+                    <div className="mt-2 text-xs sm:text-sm text-gray-600">{message}</div>
                   </div>
                   <button
                     type="button"

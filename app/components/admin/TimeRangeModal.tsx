@@ -30,6 +30,9 @@ export interface TimeRangeFormData {
   generate_slots?: boolean
   generation_duration?: string
   generation_end_date?: string
+  has_break?: boolean
+  break_start?: string
+  break_end?: string
 }
 
 const DAYS_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
@@ -50,6 +53,9 @@ export default function TimeRangeModal({
   const [frequency, setFrequency] = useState(defaultFrequency)
   const [generateSlots, setGenerateSlots] = useState(false)
   const [generationDuration, setGenerationDuration] = useState('2_weeks')
+  const [hasBreak, setHasBreak] = useState(false)
+  const [breakStart, setBreakStart] = useState('12:00')
+  const [breakEnd, setBreakEnd] = useState('14:00')
 
   // Initialiser les valeurs depuis initialData
   useEffect(() => {
@@ -66,6 +72,9 @@ export default function TimeRangeModal({
         setGenerateSlots(false)
       }
       setGenerationDuration('2_weeks')
+      setHasBreak(false)
+      setBreakStart('12:00')
+      setBreakEnd('14:00')
     }
   }, [isOpen, initialData, defaultFrequency])
 
@@ -77,7 +86,13 @@ export default function TimeRangeModal({
       start_time: startTime,
       end_time: endTime,
       slot_frequency_minutes: frequency,
-      generate_slots: generateSlots, // Génération disponible en création ET édition
+      generate_slots: generateSlots,
+      has_break: hasBreak,
+    }
+
+    if (hasBreak) {
+      data.break_start = breakStart
+      data.break_end = breakEnd
     }
 
     if (isEdit && initialData?.id) {
@@ -196,6 +211,50 @@ export default function TimeRangeModal({
                       <option value="60">60 minutes</option>
                     </select>
                   </div>
+
+                  {/* Pause déjeuner */}
+                  {!isEdit && (
+                    <div className="border-t border-gray-200 pt-4">
+                      <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={hasBreak}
+                          onChange={(e) => setHasBreak(e.target.checked)}
+                          className="mt-0.5 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-medium text-gray-900">Pause déjeuner</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Ajouter automatiquement une pause (ex: 12h-14h)
+                          </p>
+                        </div>
+                      </label>
+
+                      {hasBreak && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg space-y-3 border border-blue-200">
+                          <div className="grid grid-cols-2 gap-3">
+                            <TimeInput
+                              value={breakStart}
+                              onChange={setBreakStart}
+                              label="Début pause"
+                              required
+                            />
+                            <TimeInput
+                              value={breakEnd}
+                              onChange={setBreakEnd}
+                              label="Fin pause"
+                              required
+                            />
+                          </div>
+                          <p className="text-xs text-blue-700 bg-white/50 p-2 rounded border border-blue-300">
+                            Deux plages horaires seront créées automatiquement : {startTime}-{breakStart} et {breakEnd}-{endTime}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Génération automatique (seulement en mode création) */}
                   {!isEdit && (

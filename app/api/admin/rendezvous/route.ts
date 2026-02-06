@@ -53,7 +53,7 @@ export async function GET() {
           name,
           duration_minutes
         ),
-        staff_members (
+        staff_members:staff_member_id (
           id,
           name,
           is_active
@@ -469,9 +469,25 @@ export async function PATCH(request: Request) {
         //   // On continue même si Calendar échoue
         // }
       } else if (newStatus === 'refused' && rdvData.customer_email) {
+        // Générer ou récupérer le token de gestion pour le lien de replanification
+        let managementToken = rdvData.management_token
+        if (!managementToken) {
+          managementToken = crypto.randomBytes(32).toString('hex')
+          await supabaseAdmin
+            .from('appointments')
+            .update({ management_token: managementToken })
+            .eq('id', id)
+        }
+        
+        const managementUrl = `${getSiteUrl()}/rendezvous`
+        
         await sendRejectionEmail({
           nom: rdvData.customer_name,
           email: rdvData.customer_email,
+          service: serviceName,
+          date: rdvData.appointment_date,
+          heure: rdvData.start_time,
+          managementUrl
         })
       } else if (newStatus === 'cancelled' && rdvData.customer_email) {
         await sendCancellationEmail({

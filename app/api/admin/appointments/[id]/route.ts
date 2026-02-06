@@ -116,7 +116,7 @@ export async function GET(
       .select(`
         *,
         services (id, name, duration_minutes),
-        staff_members (id, name, is_active)
+        staff_members:staff_member_id (id, name, is_active)
       `)
       .eq('id', appointmentId)
       .eq('salon_id', salonId)

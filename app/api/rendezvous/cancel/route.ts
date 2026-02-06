@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         management_token,
         salon_id,
         services!inner (name),
-        staff_members (name)
+        staff_members:staff_member_id (name)
       `)
       .eq('id', appointmentId)
       .single()

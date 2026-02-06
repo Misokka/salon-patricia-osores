@@ -294,7 +294,7 @@ function ModifyAppointmentContent() {
               {staffMembers.length > 0 && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Membre d'équipe (optionnel)
+                    Coiffeur
                   </label>
                   <select
                     value={selectedStaffId}
@@ -308,9 +308,15 @@ function ModifyAppointmentContent() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Vous pouvez choisir un membre d'équipe spécifique ou laisser "Aucune préférence"
-                  </p>
+                  {appointment.staff_member_id && selectedStaffId === appointment.staff_member_id ? (
+                    <p className="text-xs text-gray-500 mt-1">
+                      ✓ {appointment.staff_member_name} est actuellement assigné(e) à votre rendez-vous
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Vous pouvez changer de coiffeur ou laisser "Aucune préférence"
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -386,7 +392,7 @@ function ModifyAppointmentContent() {
             {slotsNeeded > 1 && selectedTime && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  ℹ️ Ce service nécessite {slotsNeeded} créneaux consécutifs de 30 minutes
+                  Ce service nécessite {slotsNeeded} créneaux consécutifs de 30 minutes
                 </p>
               </div>
             )}
