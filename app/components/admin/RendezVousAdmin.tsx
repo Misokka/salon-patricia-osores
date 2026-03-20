@@ -294,6 +294,23 @@ export default function RendezVousAdmin() {
         <RefreshButton onRefresh={fetchRendezVous} loading={loading} />
       </div>
 
+      {filteredItems.length === 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <div className="text-gray-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun rendez-vous à afficher</h3>
+          <p className="text-sm text-gray-500">
+            {statusFilter === 'tous' 
+              ? 'Il n\'y a aucun rendez-vous pour le moment.'
+              : `Aucun rendez-vous avec le statut "${statusFilter === 'en_attente' ? 'En attente' : statusFilter === 'accepte' ? 'Accepté' : 'Refusé'}" pour cette période.`
+            }
+          </p>
+        </div>
+      )}
+
       <AnimatePresence>
         {filteredItems.map(rdv => {
           // Note: Les boutons accepter/refuser s'affichent pour tous les RDV pending

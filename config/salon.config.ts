@@ -65,6 +65,7 @@ export const salonConfig = {
       logo: "/images/logo.png",
       hero: "/images/landing1.jpg",
       ogImage: "/images/og-demo.jpg",
+      favicon: "/favicon.ico",
     },
   },
 
@@ -169,6 +170,36 @@ export const salonConfig = {
     currencySymbol: "€",
     dateFormat: "dd/MM/yyyy",
     timeFormat: "HH:mm",
+  },
+
+  /* ----------------------------------------
+   📄 PAGES SEO
+  ---------------------------------------- */
+  pages: {
+    about: {
+      title: "À Propos — Salon Patricia Osores",
+      description: "Découvrez l'histoire et l'expertise de Patricia Osores, coiffeuse passionnée à Liège depuis 20 ans.",
+      slug: "about",
+      visible: true,
+    },
+    services: {
+      title: "Services de Coiffure à Liège",
+      description: "Découvrez nos services : coupe, coloration, balayage, soins capillaires et brushing.",
+      slug: "services",
+      visible: true,
+    },
+    gallery: {
+      title: "Galerie — Nos Réalisations",
+      description: "Découvrez nos magnifiques transformations capillaires.",
+      slug: "galerie",
+      visible: true,
+    },
+    contact: {
+      title: "Contact — Salon Patricia Osores",
+      description: "Contactez-nous à Liège. Adresse, téléphone, horaires et formulaire.",
+      slug: "contact",
+      visible: true,
+    },
   },
 
   /* ----------------------------------------

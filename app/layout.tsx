@@ -75,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content={salonConfig.theme.colors.primary} />
+        <link rel="icon" href={salonConfig.theme.images.favicon} />
         <meta name="geo.region" content={salonConfig.contact.address.countryCode} />
         <meta name="geo.placename" content={salonConfig.identity.city} />
         <meta name="geo.position" content={`${salonConfig.contact.coordinates.latitude};${salonConfig.contact.coordinates.longitude}`} />

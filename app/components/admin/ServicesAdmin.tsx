@@ -241,7 +241,11 @@ export default function ServicesAdmin() {
   }
 
   const handleUpdateService = async (id: string, data: ServiceFormData) => {
-    if (data.isFeatured && featuredCount >= 3) {
+    const currentService = services.find(s => s.id === id)
+    const wasFeatured = currentService?.is_featured || false
+    const effectiveFeaturedCount = wasFeatured ? featuredCount - 1 : featuredCount
+
+    if (data.isFeatured && effectiveFeaturedCount >= 3) {
       showMessage('error', 'Maximum 3 services mis en avant')
       return
     }

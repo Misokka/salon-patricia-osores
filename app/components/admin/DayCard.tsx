@@ -33,7 +33,7 @@ interface DayCardProps {
   onToggle: () => void
   onAddSlot: () => void
   onDeleteSlot: (id: string) => void
-  onDeleteAllSlots?: () => void
+  onDeleteAllSlots: () => void
 }
 
 type TimeSlotGroup = {
@@ -57,6 +57,7 @@ export default function DayCard({
   onToggle,
   onAddSlot,
   onDeleteSlot,
+  onDeleteAllSlots,
 }: DayCardProps) {
   /* ----------------------------------------
      Slot grouping
@@ -202,6 +203,20 @@ export default function DayCard({
                 >
                   <PlusIcon className="w-4 h-4" />
                   Ajouter un créneau
+                </button>
+              )}
+
+              {!isClosed && slots.length > 0 && availableSlots.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm(`Supprimer tous les créneaux disponibles de ${dayLabel} ${date} ?`)) {
+                      onDeleteAllSlots()
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg py-2 text-sm transition"
+                >
+                  Supprimer tous les créneaux disponibles
                 </button>
               )}
 

@@ -129,6 +129,19 @@ export default function AdminDisponibilitesPage() {
     }
   }
 
+  const handleDeleteAllSlots = async (date: string) => {
+    try {
+      const response = await axios.delete(`/api/admin/disponibilites/delete-day?date=${date}`)
+      
+      if (response.data.success) {
+        // Supprimer tous les créneaux de cette date dans le state local
+        setTimeSlots(prev => prev.filter(s => s.slot_date !== date))
+      }
+    } catch (error: any) {
+      console.error('Erreur suppression créneaux du jour:', error)
+    }
+  }
+
   /* ----------------------------------------
      Week days
   ---------------------------------------- */
@@ -240,6 +253,7 @@ export default function AdminDisponibilitesPage() {
                 setIsTimePickerOpen(true)
               }}
               onDeleteSlot={handleDeleteSlot}
+              onDeleteAllSlots={() => handleDeleteAllSlots(day.dateString)}
             />
           )
         })}
