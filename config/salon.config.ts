@@ -36,13 +36,13 @@ export const salonConfig = {
     phoneDisplay: "+32 496 71 41 15",
     phoneLink: "+32496714115",
     address: {
-      street: "Place République Française 34",
+      street: "Rue Bonne Fortune 2B",
       city: "Liège",
       postalCode: "",
       region: "Liège",
       country: "Belgique",
       countryCode: "BE",
-      full: "Place République Française 34, Liège, Belgique",
+      full: "Rue Bonne Fortune 2B, Liège, Belgique",
     },
     coordinates: {
       latitude: 50.645,
